@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'history.dart';
 
 void main() => runApp(MyApp());
 
@@ -11,41 +10,58 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
       home: MainView(),
     );
   }
 }
-/*
-class MyHomePage extends StatelessWidget {
-  MyHomePage({Key key}) : super(key: key);
 
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Home Security',
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Home Security'),
-        ),
-        body: Center(
-          child: new MainView(),
-        ),
-      ),
-    );
+class HistoryItem {
+
+  bool isExpanded;
+  String event;
+  String date;
+  Image image; //TODO: add later
+
+  HistoryItem({
+    this.event,
+    this.date,
+    this.isExpanded
+  });
+
+  ExpansionPanelHeaderBuilder get headerBuilder {
+    return (BuildContext context, bool isExpanded) {
+      return Container(
+          padding: EdgeInsets.only(left: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(this.event),
+              Text(this.date)
+            ],
+          )
+      );
+    };
   }
-}*/
+
+  close() {
+    this.isExpanded = false;
+  }
+
+  Widget build() {
+
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          Text("Hello!!")
+        ]
+    );
+
+  }
+
+}
 
 class MainView extends StatefulWidget {
   @override
@@ -55,6 +71,45 @@ class MainView extends StatefulWidget {
 class _MainViewState extends State<MainView> with TickerProviderStateMixin{
 
   TabController tabController;
+  bool alarmOn;
+  List<HistoryItem> _historyItems = [];
+
+  _MainViewState() {
+
+    //TODO: Get state of alarm
+    this.alarmOn = false;
+
+    this._getHistoryEntries();
+  }
+
+  void _toggleAlarm(bool value) {
+
+    this.alarmOn = value;
+    //TODO: Make request to API
+  }
+
+  Widget _getHistoryEntries() {
+
+    //TODO: Get this from API
+
+    _historyItems = [
+      HistoryItem(
+          event: "Turn On Alarm",
+          date: "1/10/2019",
+          isExpanded: false
+      ),
+      HistoryItem(
+          event: "Turn Off Alarm",
+          date: "2/10/2019",
+          isExpanded: false
+      ),
+      HistoryItem(
+          event: "Alarm!",
+          date: "3/10/2019",
+          isExpanded: false
+      )
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,81 +120,61 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin{
         Tab(text: "Main"),
         Tab(text: "Live Feed"),
       ],
-      labelColor: Colors.blue,
+      labelColor: Colors.white,
       unselectedLabelColor: Colors.black,
       controller: tabController,
       indicatorColor: Colors.white,
     );
 
-    var listItem = new ListView.builder(
-      itemCount: 20,
-      itemBuilder: (BuildContext context, int index) {
-
-        if(index == 0){
-          // Button to turn ON/OFF alarm
-          return new ListTile(
-              title: new Card(
-                elevation: 0,
-                child: new Container(
-                  alignment: Alignment.center,
-                  //margin: new EdgeInsets.only(top: 10.0, bottom: 10.0),
-                  child: new MaterialButton(
-                    color: Colors.blue,
-                    child: new Text("Alarm ON"),
-                    onPressed: () => {
-                      print("On/Off Alarm")
-                    },
-                  ),
-                  height: 90.0,
-
+    var listItem = new ListView(
+      scrollDirection: Axis.vertical,
+      children: <Widget>[
+        new Container(
+            color: Colors.lightBlueAccent,
+            height: 100.0,
+            margin: EdgeInsets.only(top: 15.0, bottom: 10.0),
+            child: new Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Text("Alarm", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20.0)),
+                Switch(
+                    activeColor: Colors.green,
+                    value: this.alarmOn,
+                    onChanged: _toggleAlarm
                 ),
-              )
-          );
-        }
-
-
-        return new ListTile(
-          title: new Card(
-            elevation: 5.0,
-            child: new Container(
-              alignment: Alignment.center,
-              margin: new EdgeInsets.only(top: 10.0, bottom: 10.0),
-              child: new Text("ListItem $index"),
-            ),
+              ],
+            )
+        ),
+        new Container(
+          color: Colors.white,
+          margin: EdgeInsets.only(top: 10.0, bottom: 15.0),
+          height: 30.0,
+          child: Center(
+            child: Text("History", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20.0)),
           ),
-          onTap: () {
-            showDialog(
-                barrierDismissible: false,
-                context: context,
-                child: new CupertinoAlertDialog(
-                  title: new Column(
-                    children: <Widget>[
-                      new Text("ListView"),
-                      new Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                      ),
-                    ],
-                  ),
-                  content: new Text("Selected Item $index"),
-                  actions: <Widget>[
-                    new FlatButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: new Text("OK"))
-                  ],
-                ));
-          },
-        );
-      },
+        ),
+        new ExpansionPanelList(
+            expansionCallback: (int index, bool isExpanded) {
+              setState(() {
+                _historyItems[index].isExpanded = !isExpanded;
+              });
+            },
+            children: _historyItems.map<ExpansionPanel>((HistoryItem item) {
+              return ExpansionPanel(
+                isExpanded: item.isExpanded,
+                headerBuilder: item.headerBuilder,
+                body: item.build(),
+              );
+            }).toList()
+        )
+      ],
     );
 
     return new DefaultTabController(
       length: 2,
       child: new Scaffold(
         appBar: new AppBar(
-          title: new Text("Flutter TabBar"),
+          title: new Text("Home Security"),
           bottom: tabBarItem,
         ),
         body: new TabBarView(
@@ -151,32 +186,8 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin{
         ),
       ),
     );
-
-    /*
-    return new MaterialApp(
-      home: DefaultTabController(
-        length: 2,
-        child: new Scaffold(
-
-          appBar: TabBar(
-            tabs: [
-              Tab(text: "Main"),
-              Tab(text: "Live Feed"),
-            ],
-            labelColor: Colors.blue,
-            unselectedLabelColor: Colors.black,
-          ),
-
-          body: TabBarView(
-              children: [
-                Container(color: Colors.green),
-                Container(color: Colors.orange),
-              ]
-          ),
-        ),
-      ),
-    );*/
   }
 
-
 }
+
+
