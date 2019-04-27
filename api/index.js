@@ -7,6 +7,7 @@ const errorHandler = require("./controllers/error");
 //const db = require("./models");
 const authRoutes = require("./routes/auth");
 const historyRoutes = require("./routes/history");
+const alarmRoutes = require("./routes/alarm");
 const { loginRequired, ensureCorrectUser } = require("./middleware/auth");
 
 const PORT = process.env.PORT;
@@ -16,6 +17,7 @@ app.use(bodyParser.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/history", loginRequired, historyRoutes);
+app.use("/api/alarm", loginRequired, alarmRoutes);
 
 app.use(function (req, res, next) {
     let err = new Error("Not Found");
