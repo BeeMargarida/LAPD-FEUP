@@ -10,9 +10,10 @@ const historyRoutes = require("./routes/history");
 const alarmRoutes = require("./routes/alarm");
 const { loginRequired, ensureCorrectUser } = require("./middleware/auth");
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use("/api/auth", authRoutes);
