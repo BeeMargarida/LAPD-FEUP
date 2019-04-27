@@ -6,15 +6,10 @@ Los Angeles Police Department Home Security System
 
 ### Setup
 
-* Install mongo in your pc
+* Install mongo on the Raspberry Pi ``` sudo apt-get install mongodb ```
 * Run mongo in a terminal (if you have Linux), by running the command ``` mongodb ``` or the shell ``` mongo ```
 * In the folder *api*, run ``` npm install ```
-* If you want to use a *virtualenv* for the python dependencies:
-    * Install *virtualenv* 
-    * Create a virtualenv in *api* by running the command ``` virtualenv venv ```
-    * Activate the virtualenv ``` . venv/bin/activate ```
-    * Install dependencies ``` pip install -r requirements.txt ```
-* If you don't want to use virtualenv, in the folder *api*, run ``` pip install -r requirements.txt ```
+* In the folder *api*, run ``` pip3 install -r requirements.txt ```
 
 
 ### Run
@@ -28,3 +23,6 @@ Los Angeles Police Department Home Security System
     * Sign In: **localhost:8081/api/auth/signin**
 * History:
     * List history: **localhost:8081/api/history**
+* Alarm 
+    * Start alarm : **localhost:8081/api/alarm/start**
+    * Stop alarm : **localhost:8081/api/alarm/stop**
