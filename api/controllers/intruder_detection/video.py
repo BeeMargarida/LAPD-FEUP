@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import sys
 import datetime
 
 assetsDir = "../../../assets/"
@@ -38,6 +39,8 @@ def check_frame(frame, timestamp, avg):
     
     if alert == True:
         cv2.imwrite(assetsDir + "alerts/" + "alert_{}.png".format(timestamp), frame)
+        print("Alert!")
+        sys.stdout.flush()
         
     return avg
 
