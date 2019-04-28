@@ -3,8 +3,7 @@ mongoose.set("debug", true);
 mongoose.Promise = Promise;
 const DB_CONNECTION = process.env.DB_CONNECTION || "mongodb://localhost:27017/homesecurity";
 mongoose.connect(DB_CONNECTION, {
-	useNewUrlParser: true,
-    keepAlive: true
+    useNewUrlParser: true
 });
 
 module.exports.User = require("./user");
