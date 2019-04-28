@@ -16,6 +16,10 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+app.get('/', function(req, res) {
+    res.sendFile(__dirname + '/controllers/index.html');
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/history", loginRequired, historyRoutes);
 app.use("/api/alarm", alarmRoutes);
