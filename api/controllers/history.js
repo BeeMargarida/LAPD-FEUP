@@ -5,12 +5,12 @@ exports.createHistory = async function (req, res, next) {
 
         //body must contain: type (String), imagePath (string), user_id 
         let history = await db.History.create({
-            type: req.body.type,
-            imagePath: req.body.imagePath,
-            user: req.params.id
+            type: data.type,
+            imagePath: data.imagePath,
+            user: data.user.id
         });
 
-        return res.status(200).json({...history});
+        return;
 
     } catch (err) {
         return next({

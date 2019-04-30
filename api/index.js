@@ -22,7 +22,7 @@ app.get('/', function(req, res) {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/history", loginRequired, historyRoutes);
-app.use("/api/alarm", alarmRoutes);
+app.use("/api/alarm", loginRequired, alarmRoutes);
 
 app.use(function (req, res, next) {
     let err = new Error("Not Found");
