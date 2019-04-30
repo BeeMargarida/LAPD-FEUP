@@ -19,13 +19,23 @@ Los Angeles Police Department Home Security System
 ### Routes
 
 * Authentication: 
-    * Sign Up: **localhost:8081/api/auth/signup**
-    * Sign In: **localhost:8081/api/auth/signin**
+    * Sign Up: **localhost:3000/api/auth/signup**
+    * Sign In: **localhost:3000/api/auth/signin**
 * History:
-    * List history: **localhost:8081/api/history**
+    * List history: **localhost:3000/api/history**
 * Alarm 
-    * Start alarm : **localhost:8081/api/alarm/start**
-    * Stop alarm : **localhost:8081/api/alarm/stop**
+    * Start alarm: **localhost:3000/api/alarm/start**
+    * Stop alarm: **localhost:3000/api/alarm/stop**
+* Livestream
+    * Start Livestream: **localhost:3000/api/alarm/livestream**
+    * Stop Livestream: **localhost:3000/api/alarm/livestream/stop**
+
+
+#### Accounts
+
+    * Name: root
+    * Email: root@gmail.com
+    * Password: lapd
 
 
 ## Database
@@ -35,6 +45,7 @@ Los Angeles Police Department Home Security System
 * Inside the folder *api* run ``` docker-compose up ```
 * In another terminal run ``` docker exec -it api_mongo_1 mongo admin ```, which will open the mongo shell.
 * Create admin user: ``` db.createUser({ user: "root", pwd: "lapd", roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] }) ```
+* Change to homesecurity database: ``` use homesecurity ``` 
 * Authenticate: ``` db.auth("root", "lapd") ```
 * Create homesecurity database and user: ``` db.createUser({ user: "lapd", pwd: "lapd", roles: [{ role: "dbOwner", db: "homesecurity" }] }) ``` , ``` db.auth("lapd","lapd") ``` 
 
