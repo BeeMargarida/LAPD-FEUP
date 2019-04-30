@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_app/history_item.dart';
 
 void main() => runApp(MyApp());
 
@@ -22,7 +23,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      //home: LogInView(),
       initialRoute: '/login',
       routes: {
         '/': (context) => MainView(),
@@ -42,35 +42,7 @@ class UserData {
   String token = '';
 }
 
-class HistoryItem {
-  bool isExpanded;
-  String event;
-  String date;
-  Image image; //TODO: add later
 
-  HistoryItem({this.event, this.date, this.isExpanded});
-
-  ExpansionPanelHeaderBuilder get headerBuilder {
-    return (BuildContext context, bool isExpanded) {
-      return Container(
-          padding: EdgeInsets.only(left: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[Text(this.event), Text(this.date)],
-          ));
-    };
-  }
-
-  close() {
-    this.isExpanded = false;
-  }
-
-  Widget build() {
-    return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[Text("Hello!!")]);
-  }
-}
 
 class LogInView extends StatefulWidget {
   @override
@@ -224,7 +196,14 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     //TODO: Get state of alarm
     this.alarmOn = false;
 
-    this._getHistoryEntries();
+    _historyItems = [
+      HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
+      HistoryItem(
+          event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
+      HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
+    ];
+
+    this._getHistoryEntries(); //TODO: handle error
   }
 
   void _toggleAlarm(bool value) {
@@ -234,42 +213,27 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
 
 
   Future<void> _getHistoryEntries() async {
-    //TODO: Get this from API
+
     var res = await http.get(
         Uri.http(_apiHost, _apiPath + 'history'),
-        body: {
-          "email": _userLoginData.email,
-          "password": _userLoginData.password
-        }
-    );
-
-    //var historyJson = json.decode(history);
-
-    _historyItems = [
-      HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
-      HistoryItem(
-          event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
-      HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
-    ];
-  }
-
-
-  Future<bool> _getHistoryEntriesAsync() async {
-    var res = await http.get(
-        Uri.http(_apiHost, _apiPath + 'auth/signin'),
         headers: {
-          "Authorization": 'Bearer '+_loggedUserData.token
+          "Authorization": "Bearer " + _loggedUserData.token
         }
     );
-
-    Map<String, dynamic> decodedBody = jsonDecode(res.body);
-    _loggedUserData.loginData = _userLoginData;
-    _loggedUserData.token = decodedBody['token'];
 
     if (res.statusCode != 200)
       return Future<bool>.value(false);
-    else
+    else {
+      print(res.body);
+      List historyItems = jsonDecode(res.body);
+      /*historyItems.forEach((item) => { print(item), _historyItems.add(HistoryItem(event: item., date: item.createdAt, isExpanded: false))} );
+      print(historyItems.length);*/
+
+      //List l = json.decode(res.body);
+      //_historyItems = l.map((Map model)=> HistoryItem.fromJson(model)).toList();
       return Future<bool>.value(true);
+    }
+
   }
 
 
