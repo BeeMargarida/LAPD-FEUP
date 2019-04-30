@@ -7,7 +7,7 @@ import 'dart:convert';
 
 void main() => runApp(MyApp());
 
-final String _apiHost = "f4a61c6b.ngrok.io" /*'10.0.2.2:3000' -> this isn't working on my network for some reason...*/;
+final String _apiHost = "192.168.1.202:3000" /*'10.0.2.2:3000' -> this isn't working on my network for some reason...*/;
 final String _apiPath = '/api/';
 
 LoginData _userLoginData = new LoginData();
@@ -232,14 +232,27 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     //TODO: Make request to API
   }
 
-  /*
+
   Future<void> _getHistoryEntries() async {
     //TODO: Get this from API
-    var history = await http.get('locahost:3000/api/history');
-    print(history);
+    var res = await http.get(
+        Uri.http(_apiHost, _apiPath + 'history'),
+        body: {
+          "email": _userLoginData.email,
+          "password": _userLoginData.password
+        }
+    );
+
     //var historyJson = json.decode(history);
+
+    _historyItems = [
+      HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
+      HistoryItem(
+          event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
+      HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
+    ];
   }
-  */
+
 
   Future<bool> _getHistoryEntriesAsync() async {
     var res = await http.get(
@@ -259,16 +272,6 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       return Future<bool>.value(true);
   }
 
-  Widget _getHistoryEntries() {
-    //TODO: Get this from API
-
-    _historyItems = [
-      HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
-      HistoryItem(
-          event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
-      HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
-    ];
-  }
 
   @override
   Widget build(BuildContext context) {
