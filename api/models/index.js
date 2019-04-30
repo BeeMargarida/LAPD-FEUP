@@ -6,5 +6,7 @@ mongoose.connect(DB_CONNECTION, {
     useNewUrlParser: true
 });
 
+console.log(DB_CONNECTION);
+
 module.exports.User = require("./user");
 module.exports.History = require("./history");
