@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 class HistoryItem {
   bool isExpanded;
   String event;
-  String date;
+  DateTime date;
   Image image; //TODO: add later
 
   HistoryItem({this.event, this.date, this.isExpanded});
@@ -18,12 +18,15 @@ class HistoryItem {
   ExpansionPanelHeaderBuilder get headerBuilder {
     return (BuildContext context, bool isExpanded) {
       return Container(
-          padding: EdgeInsets.only(left: 20.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[Text(this.event), Text(this.date)],
+            children: <Widget>[Text(this.event), Text(this.getDateFormat())],
           ));
     };
+  }
+
+  String getDateFormat() {
+    return this.date.day.toString() + "/" + this.date.month.toString() + "/" + this.date.year.toString() + " " + this.date.hour.toString() + ":" + this.date.minute.toString();
   }
 
   close() {
