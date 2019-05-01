@@ -19,15 +19,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      initialRoute: '/login',
-      routes: {
-        '/': (context) => MainView(),
-        '/login': (context) => LogInView()
-      }
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        initialRoute: '/login',
+        routes: {
+          '/': (context) => MainView(),
+          '/login': (context) => LogInView()
+        }
     );
   }
 }
@@ -192,23 +192,23 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   List<HistoryItem> _historyItems = [];
   final List<String> _dropDownOptions = ['Settings', 'Logout'];
 
-  _MainViewState() {
-    //TODO: Get state of alarm
-    this.alarmOn = false;
+  void _toggleAlarm(bool value) {
+    this.alarmOn = value;
+    //TODO: Make request to API
+  }
 
-    _historyItems = [
+  @override
+  void initState() {
+    super.initState();
+    this.alarmOn = false;
+    this._getHistoryEntries();
+
+    /*_historyItems = [
       HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
       HistoryItem(
           event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
       HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
-    ];
-
-    this._getHistoryEntries(); //TODO: handle error
-  }
-
-  void _toggleAlarm(bool value) {
-    this.alarmOn = value;
-    //TODO: Make request to API
+    ];*/
   }
 
 
@@ -217,20 +217,18 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     var res = await http.get(
         Uri.http(_apiHost, _apiPath + 'history'),
         headers: {
-          "Authorization": "Bearer " + _loggedUserData.token
+          "Authorization": "Bearer " + _loggedUserData.token,
+          "Accept": "application/json"
         }
     );
 
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
-      print(res.body);
-      List historyItems = jsonDecode(res.body);
-      /*historyItems.forEach((item) => { print(item), _historyItems.add(HistoryItem(event: item., date: item.createdAt, isExpanded: false))} );
-      print(historyItems.length);*/
-
-      //List l = json.decode(res.body);
-      //_historyItems = l.map((Map model)=> HistoryItem.fromJson(model)).toList();
+      setState((){
+        List historyItems = jsonDecode(res.body);
+        historyItems.forEach((item) => { _historyItems.add(HistoryItem(event: item["type"], date: DateTime.parse(item["createdAt"]), isExpanded: false))});
+      });
       return Future<bool>.value(true);
     }
 
@@ -252,8 +250,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       indicatorColor: Colors.white,
     );
 
-    var listItem = new ListView(
-      scrollDirection: Axis.vertical,
+    var listItem = new Column(
       children: <Widget>[
         new Container(
             color: Colors.lightBlueAccent,
@@ -274,7 +271,6 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
               ],
             )),
         new Container(
-          color: Colors.white,
           margin: EdgeInsets.only(top: 10.0, bottom: 15.0),
           height: 30.0,
           child: Center(
@@ -285,19 +281,36 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
                     fontSize: 20.0)),
           ),
         ),
-        new ExpansionPanelList(
-            expansionCallback: (int index, bool isExpanded) {
-              setState(() {
-                _historyItems[index].isExpanded = !isExpanded;
-              });
-            },
-            children: _historyItems.map<ExpansionPanel>((HistoryItem item) {
-              return ExpansionPanel(
-                isExpanded: item.isExpanded,
-                headerBuilder: item.headerBuilder,
-                body: item.build(),
-              );
-            }).toList())
+        new Flexible(
+          child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _historyItems.length,
+              itemBuilder: (context, i) {
+                if(_historyItems[i].event == "Turn On Alarm"){
+                  return Container(
+                      color: Colors.white,
+                      padding: EdgeInsets.all(20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[Text(_historyItems[i].event), Text(_historyItems[i].getDateFormat())],
+                      ));
+                }
+                else {
+                  return Container (
+                      color: Colors.white,
+                      child: new ExpansionTile(
+                        backgroundColor: Colors.white,
+                        title: _historyItems[i].headerBuilder(
+                            context, _historyItems[i].isExpanded),
+                        children: <Widget>[
+                          _historyItems[i].build(),
+                        ],
+                      )
+                  );
+                }
+              }
+          ),
+        ),
       ],
     );
 
