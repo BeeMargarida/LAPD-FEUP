@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
@@ -295,7 +295,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
             shrinkWrap: true,
             itemCount: _historyItems.length,
             itemBuilder: (context, i) {
-              if(_historyItems[i].event == "Turn On Alarm"){
+              if(_historyItems[i].event == "Turn On Alarm" || _historyItems[i].event == "Turn Off Alarm"){
                 return Container(
                     color: Colors.white,
                     padding: EdgeInsets.all(20.0),
