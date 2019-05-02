@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_app/history_item.dart';
 
 void main() => runApp(MyApp());
 
-final String _apiHost = "192.168.1.202:3000" /*'10.0.2.2:3000' -> this isn't working on my network for some reason...*/;
+final String _apiHost = "178.166.11.252:3000" /*'10.0.2.2:3000' -> this isn't working on my network for some reason...*/;
 final String _apiPath = '/api/';
 
 LoginData _userLoginData = new LoginData();
@@ -227,6 +227,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     else {
       setState((){
         List historyItems = jsonDecode(res.body);
+        print(res.body);
         historyItems.forEach((item) => { _historyItems.add(HistoryItem(event: item["type"], date: DateTime.parse(item["createdAt"]), isExpanded: false))});
       });
       return Future<bool>.value(true);
@@ -286,7 +287,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
               shrinkWrap: true,
               itemCount: _historyItems.length,
               itemBuilder: (context, i) {
-                if(_historyItems[i].event == "Turn On Alarm"){
+                if(_historyItems[i].event == "Turn On Alarm" || _historyItems[i].event == "Turn Off Alarm"){
                   return Container(
                       color: Colors.white,
                       padding: EdgeInsets.all(20.0),
