@@ -4,12 +4,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
 
 void main() => runApp(MyApp());
-
-final String _apiHost = "192.168.1.202:3000" /*'10.0.2.2:3000' -> this isn't working on my network for some reason...*/;
-final String _apiPath = '/api/';
 
 LoginData _userLoginData = new LoginData();
 UserData _loggedUserData = new UserData();
@@ -42,8 +40,6 @@ class UserData {
   String token = '';
 }
 
-
-
 class LogInView extends StatefulWidget {
   @override
   _LogInViewState createState() => new _LogInViewState();
@@ -54,7 +50,7 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
 
   Future<bool> login() async {
     var res = await http.post(
-        Uri.http(_apiHost, _apiPath + 'auth/signin'),
+        Uri.http(Configs.API_HOST, Configs.API_PATH + 'auth/signin'),
         body: {
           "email": _userLoginData.email,
           "password": _userLoginData.password
@@ -190,7 +186,11 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   TabController tabController;
   bool alarmOn;
   List<HistoryItem> _historyItems = [];
-  final List<String> _dropDownOptions = ['Settings', 'Logout'];
+  int _currHistoryPage = 1;
+  int _itemsPerPage = 10;
+  bool _loadingMore = false;
+  bool _canLoadMore = true;
+  ScrollController _scrollController = ScrollController();
 
   void _toggleAlarm(bool value) {
     this.alarmOn = value;
@@ -202,6 +202,14 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     super.initState();
     this.alarmOn = false;
     this._getHistoryEntries();
+    this._scrollController.addListener(() {
+      if(_scrollController.position.pixels == _scrollController.position.maxScrollExtent){
+        if(_canLoadMore && !_loadingMore) {
+          _currHistoryPage++;
+          _getHistoryEntries();
+        }
+      }
+    });
 
     /*_historyItems = [
       HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
@@ -211,11 +219,24 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     ];*/
   }
 
+  @override
+  void dispose(){
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _getHistoryEntries() async {
+    setState((){
+      _loadingMore = true;
+    });
+
+    var pageParams = {
+      'page': _currHistoryPage.toString(),
+      'per_page':_itemsPerPage.toString(),
+    };
 
     var res = await http.get(
-        Uri.http(_apiHost, _apiPath + 'history'),
+        Uri.http(Configs.API_HOST, Configs.API_PATH + 'history', pageParams),
         headers: {
           "Authorization": "Bearer " + _loggedUserData.token,
           "Accept": "application/json"
@@ -225,15 +246,91 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
+      List historyItems = jsonDecode(res.body);
+      if(historyItems.length < _itemsPerPage)
+        _canLoadMore = false;
       setState((){
-        List historyItems = jsonDecode(res.body);
         historyItems.forEach((item) => { _historyItems.add(HistoryItem(event: item["type"], date: DateTime.parse(item["createdAt"]), isExpanded: false))});
+        _loadingMore = false;
       });
       return Future<bool>.value(true);
     }
 
   }
 
+  List<Widget> getListItems(BuildContext context){
+    var listItems = [
+       Container(
+          color: Colors.lightBlueAccent,
+          height: 100.0,
+          margin: EdgeInsets.only(top: 15.0, bottom: 10.0),
+          child: new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              Text("Alarm",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20.0)),
+              Switch(
+                  activeColor: Colors.green,
+                  value: this.alarmOn,
+                  onChanged: _toggleAlarm),
+            ],
+          )),
+      Container(
+        margin: EdgeInsets.only(top: 10.0, bottom: 15.0),
+        height: 30.0,
+        child: Center(
+          child: Text("History",
+              style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20.0)),
+        ),
+      ),
+      Flexible(
+        child: ListView.builder(
+            controller: _scrollController,
+            shrinkWrap: true,
+            itemCount: _historyItems.length,
+            itemBuilder: (context, i) {
+              if(_historyItems[i].event == "Turn On Alarm"){
+                return Container(
+                    color: Colors.white,
+                    padding: EdgeInsets.all(20.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[Text(_historyItems[i].event), Text(_historyItems[i].getDateFormat())],
+                    ));
+              }
+              else {
+                return Container (
+                    color: Colors.white,
+                    child: new ExpansionTile(
+                      backgroundColor: Colors.white,
+                      title: _historyItems[i].headerBuilder(
+                          context, _historyItems[i].isExpanded),
+                      children: <Widget>[
+                        _historyItems[i].build(),
+                      ],
+                    )
+                );
+              }
+            }
+        ),
+      ),
+    ];
+
+    if(_loadingMore)
+      listItems.add(
+        CircularProgressIndicator(
+          value: null,
+        )
+      );
+
+    return listItems;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,67 +348,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     );
 
     var listItem = new Column(
-      children: <Widget>[
-        new Container(
-            color: Colors.lightBlueAccent,
-            height: 100.0,
-            margin: EdgeInsets.only(top: 15.0, bottom: 10.0),
-            child: new Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Text("Alarm",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20.0)),
-                Switch(
-                    activeColor: Colors.green,
-                    value: this.alarmOn,
-                    onChanged: _toggleAlarm),
-              ],
-            )),
-        new Container(
-          margin: EdgeInsets.only(top: 10.0, bottom: 15.0),
-          height: 30.0,
-          child: Center(
-            child: Text("History",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20.0)),
-          ),
-        ),
-        new Flexible(
-          child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _historyItems.length,
-              itemBuilder: (context, i) {
-                if(_historyItems[i].event == "Turn On Alarm"){
-                  return Container(
-                      color: Colors.white,
-                      padding: EdgeInsets.all(20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[Text(_historyItems[i].event), Text(_historyItems[i].getDateFormat())],
-                      ));
-                }
-                else {
-                  return Container (
-                      color: Colors.white,
-                      child: new ExpansionTile(
-                        backgroundColor: Colors.white,
-                        title: _historyItems[i].headerBuilder(
-                            context, _historyItems[i].isExpanded),
-                        children: <Widget>[
-                          _historyItems[i].build(),
-                        ],
-                      )
-                  );
-                }
-              }
-          ),
-        ),
-      ],
+      children: getListItems(context),
     );
 
     return new DefaultTabController(
