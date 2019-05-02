@@ -1,0 +1,44 @@
+Feedback avaliação:
+
+1ª entrega:
+
+- Abstract incompleto: introdução mais completa com citação para aplicações a serem desenvolvidas na área
+
+- Motivação nao satisfaz (fraca) 
+
+- Objetivos: usados para concluir se o trabalho foi bem executado
+
+- Estado da arte: listagens de soluções que já existem; como é abordado hoje em dia e qual a nossa abordagem e motivação para isso; FALTAM CITAÇÕES
+
+- Data sources: falta definir quais a data sources, quais são e o que são
+
+- Discussões: check;
+
+2ª entrega:
+
+Semelhante à 1ª
+
+- Discussão -> penultimo item e atualizada
+
+- Explicar todas as imagens: arquitetura e mockups
+
+- Muito texto no calendário, passar para tabela
+
+- Linguagem: o objetivo era este, na próxima versão iremos ter...
+
+Comentarios do Manuel:
+
+1ª 
+
+Abstract - focado na solução e não no IOT
+
+Conceito geral falta a complexidade desejada, esperada alguma interaçao com api's públicas
+
+Pulling passa para messages
+
+2ª 
+
+
+
+dicas:
+	we're -> we are
