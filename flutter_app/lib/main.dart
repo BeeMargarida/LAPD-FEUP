@@ -193,10 +193,15 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   ScrollController _scrollController = ScrollController();
 
   Future<void> _toggleAlarm(bool value) async {
-    this.alarmOn = value;
-    //TODO: Make request to API
+    var pathAlarm = 'alarm/';
+    if (!this.alarmOn) {
+      pathAlarm += 'start';
+    } 
+    else {
+      pathAlarm += 'stop';
+    }
     var res = await http.post(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/start'),
+        Uri.http(Configs.API_HOST, Configs.API_PATH + pathAlarm),
         headers: {
           "Authorization": "Bearer " + _loggedUserData.token,
           "Accept": "application/json"
@@ -206,17 +211,18 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
+      this.alarmOn = !this.alarmOn;
       Map historyItem = jsonDecode(res.body);
       _historyItems.add(HistoryItem(event: historyItem["type"], date: DateTime.parse(historyItem["createdAt"]), isExpanded: false));
     }
-
 
   }
 
   @override
   void initState() {
     super.initState();
-    this.alarmOn = false;
+
+    this._getAlarmState();
     this._getHistoryEntries();
     this._scrollController.addListener(() {
       if(_scrollController.position.pixels == _scrollController.position.maxScrollExtent){
@@ -226,13 +232,24 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         }
       }
     });
+  }
 
-    /*_historyItems = [
-      HistoryItem(event: "Turn On Alarm", date: "1/10/2019", isExpanded: false),
-      HistoryItem(
-          event: "Turn Off Alarm", date: "2/10/2019", isExpanded: false),
-      HistoryItem(event: "Alarm!", date: "3/10/2019", isExpanded: false)
-    ];*/
+  Future<void> _getAlarmState() async {
+    var res = await http.get(
+        Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/'),
+        headers: {
+          "Authorization": "Bearer " + _loggedUserData.token,
+          "Accept": "application/json"
+        }
+    );
+
+    if (res.statusCode != 200)
+      return Future<bool>.value(false);
+    else {
+      Map alarmState = jsonDecode(res.body);
+      print(alarmState.toString());
+      this.alarmOn = alarmState["alarm"];
+    }
   }
 
   @override
