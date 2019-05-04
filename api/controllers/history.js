@@ -11,7 +11,7 @@ exports.createHistory = async function (req, res, next) {
             user: data.user.id
         });
 
-        return;
+        return history;
 
     } catch (err) {
         return next({
