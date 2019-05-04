@@ -38,8 +38,9 @@ def check_frame(frame, timestamp, avg):
 
     
     if alert == True:
-        cv2.imwrite(assetsDir + "alerts/" + "alert_{}.png".format(timestamp), frame)
-        print("Alert!")
+        path = assetsDir + "alerts/" + "alert_{}.png".format(timestamp)
+        cv2.imwrite(path, frame)
+        print(path)
         sys.stdout.flush()
         
     return avg

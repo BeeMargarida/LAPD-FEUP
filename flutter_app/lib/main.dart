@@ -25,8 +25,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/': (context) => MainView(),
           '/login': (context) => LogInView()
-        }
-    );
+        });
   }
 }
 
@@ -54,8 +53,7 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
         body: {
           "email": _userLoginData.email,
           "password": _userLoginData.password
-        }
-    );
+        });
 
     Map<String, dynamic> decodedBody = jsonDecode(res.body);
     _loggedUserData.loginData = _userLoginData;
@@ -68,8 +66,8 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
   }
 
   bool isEmail(String em) {
-
-    String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+    String p =
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
 
     RegExp regExp = new RegExp(p);
 
@@ -145,11 +143,11 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                           child: RaisedButton(
                             onPressed: () {
-
                               // Validate form
                               if (_formKey.currentState.validate()) {
                                 // Dismiss keyboard
-                                FocusScope.of(context).requestFocus(new FocusNode());
+                                FocusScope.of(context)
+                                    .requestFocus(new FocusNode());
                                 _formKey.currentState.save();
 
                                 login().then((bool res) {
@@ -159,7 +157,8 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                                       MaterialPageRoute(
                                           builder: (context) => MainView()),
                                     );*/
-                                    Navigator.pushReplacementNamed(context, "/");
+                                    Navigator.pushReplacementNamed(
+                                        context, "/");
                                   } else {
                                     Scaffold.of(context).showSnackBar(SnackBar(
                                         content: Text('Invalid credentials')));
@@ -184,7 +183,7 @@ class MainView extends StatefulWidget {
 
 class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   TabController tabController;
-  bool alarmOn;
+  bool _alarmOn = false;
   List<HistoryItem> _historyItems = [];
   int _currHistoryPage = 1;
   int _itemsPerPage = 10;
@@ -192,41 +191,17 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   bool _canLoadMore = true;
   ScrollController _scrollController = ScrollController();
 
-  Future<void> _toggleAlarm(bool value) async {
-    var pathAlarm = 'alarm/';
-    if (!this.alarmOn) {
-      pathAlarm += 'start';
-    } 
-    else {
-      pathAlarm += 'stop';
-    }
-    var res = await http.post(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + pathAlarm),
-        headers: {
-          "Authorization": "Bearer " + _loggedUserData.token,
-          "Accept": "application/json"
-        }
-    );
-
-    if (res.statusCode != 200)
-      return Future<bool>.value(false);
-    else {
-      this.alarmOn = !this.alarmOn;
-      Map historyItem = jsonDecode(res.body);
-      _historyItems.add(HistoryItem(event: historyItem["type"], date: DateTime.parse(historyItem["createdAt"]), isExpanded: false));
-    }
-
-  }
-
   @override
   void initState() {
     super.initState();
 
     this._getAlarmState();
     this._getHistoryEntries();
+
     this._scrollController.addListener(() {
-      if(_scrollController.position.pixels == _scrollController.position.maxScrollExtent){
-        if(_canLoadMore && !_loadingMore) {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        if (_canLoadMore && !_loadingMore) {
           _currHistoryPage++;
           _getHistoryEntries();
         }
@@ -235,37 +210,70 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   }
 
   Future<void> _getAlarmState() async {
-    var res = await http.get(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/'),
-        headers: {
-          "Authorization": "Bearer " + _loggedUserData.token,
-          "Accept": "application/json"
-        }
-    );
+    var res = await http
+        .get(Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/'), headers: {
+      "Authorization": "Bearer " + _loggedUserData.token,
+      "Accept": "application/json"
+    });
 
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
       Map alarmState = jsonDecode(res.body);
       print(alarmState.toString());
-      this.alarmOn = alarmState["alarm"];
+      setState(() {
+        _alarmOn = alarmState["alarm"];
+      });
+    }
+  }
+
+  Future<void> _toggleAlarm(bool value) async {
+    var pathAlarm = 'alarm/';
+
+    if (!this._alarmOn) {
+      pathAlarm += 'start';
+    } else {
+      pathAlarm += 'stop';
+    }
+
+    var res = await http.post(
+        Uri.http(Configs.API_HOST, Configs.API_PATH + pathAlarm),
+        headers: {
+          "Authorization": "Bearer " + _loggedUserData.token,
+          "Accept": "application/json"
+        });
+
+    if (res.statusCode != 200)
+      return Future<bool>.value(false);
+    else {
+
+      Map historyItem = jsonDecode(res.body);
+      setState(() {
+        _alarmOn = value;
+        // TODO: Not working!!
+        // _historyItems.add(HistoryItem(
+        //     event: historyItem["type"],
+        //     date: DateTime.parse(historyItem["createdAt"]),
+        //     isExpanded: false));
+      });
+
     }
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _getHistoryEntries() async {
-    setState((){
+    setState(() {
       _loadingMore = true;
     });
 
     var pageParams = {
       'page': _currHistoryPage.toString(),
-      'per_page':_itemsPerPage.toString(),
+      'per_page': _itemsPerPage.toString(),
     };
 
     var res = await http.get(
@@ -273,45 +281,42 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         headers: {
           "Authorization": "Bearer " + _loggedUserData.token,
           "Accept": "application/json"
-        }
-    );
+        });
 
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
       List historyItems = jsonDecode(res.body);
-      print(historyItems.length);
-      if(historyItems.length < _itemsPerPage)
-        _canLoadMore = false;
-      setState((){
-        historyItems.forEach((item) => { _historyItems.add(HistoryItem(event: item["type"], date: DateTime.parse(item["createdAt"]), isExpanded: false))});
+      if (historyItems.length < _itemsPerPage) _canLoadMore = false;
+      setState(() {
+        historyItems.forEach((item) => {
+              _historyItems.add(HistoryItem(
+                  event: item["type"],
+                  date: DateTime.parse(item["createdAt"]),
+                  isExpanded: false))
+            });
         _loadingMore = false;
       });
       return Future<bool>.value(true);
     }
-
   }
 
-  List<Widget> getListItems(BuildContext context){
+  List<Widget> getListItems(BuildContext context) {
     var listItems = [
-       Container(
+      Container(
           color: Colors.lightBlueAccent,
           height: 100.0,
-          margin: EdgeInsets.only(top: 15.0, bottom: 10.0),
-          child: new Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text("Alarm",
+          alignment: Alignment.center,
+          padding: EdgeInsets.only(left: 15.0, right: 15.0),
+          child: SwitchListTile(
+              title: Text("Alarm",
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20.0)),
-              Switch(
-                  activeColor: Colors.green,
-                  value: this.alarmOn,
-                  onChanged: _toggleAlarm),
-            ],
-          )),
+                      fontSize: 30.0)),
+              activeColor: Colors.green,
+              value: _alarmOn,
+              onChanged: _toggleAlarm)),
       Container(
         margin: EdgeInsets.only(top: 10.0, bottom: 15.0),
         height: 30.0,
@@ -329,39 +334,38 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
             shrinkWrap: true,
             itemCount: _historyItems.length,
             itemBuilder: (context, i) {
-              if(_historyItems[i].event == "Turn On Alarm" || _historyItems[i].event == "Turn Off Alarm"){
+              if (_historyItems[i].event == "Turn On Alarm" ||
+                  _historyItems[i].event == "Turn Off Alarm") {
                 return Container(
                     color: Colors.white,
                     padding: EdgeInsets.all(20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[Text(_historyItems[i].event), Text(_historyItems[i].getDateFormat())],
+                      children: <Widget>[
+                        Text(_historyItems[i].event),
+                        Text(_historyItems[i].getDateFormat())
+                      ],
                     ));
-              }
-              else {
-                return Container (
+              } else {
+                return Container(
                     color: Colors.white,
                     child: new ExpansionTile(
                       backgroundColor: Colors.white,
-                      title: _historyItems[i].headerBuilder(
-                          context, _historyItems[i].isExpanded),
+                      title: _historyItems[i]
+                          .headerBuilder(context, _historyItems[i].isExpanded),
                       children: <Widget>[
                         _historyItems[i].build(),
                       ],
-                    )
-                );
+                    ));
               }
-            }
-        ),
+            }),
       ),
     ];
 
-    if(_loadingMore)
-      listItems.add(
-        CircularProgressIndicator(
-          value: null,
-        )
-      );
+    if (_loadingMore)
+      listItems.add(CircularProgressIndicator(
+        value: null,
+      ));
 
     return listItems;
   }
