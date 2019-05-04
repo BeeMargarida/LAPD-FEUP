@@ -5,14 +5,14 @@ class HistoryItem {
   bool isExpanded;
   String event;
   DateTime date;
-  Image image; //TODO: add later
+  String imagePath; //TODO: add later
 
   HistoryItem({this.event, this.date, this.isExpanded});
 
   HistoryItem.fromJson(Map<String, dynamic> json)
       : event = json['type'],
         date = json['createdAt'],
-        image = json['imagePath'],
+        imagePath = json['imagePath'],
         isExpanded = false;
 
   ExpansionPanelHeaderBuilder get headerBuilder {
@@ -26,7 +26,11 @@ class HistoryItem {
   }
 
   String getDateFormat() {
-    return this.date.day.toString() + "/" + this.date.month.toString() + "/" + this.date.year.toString() + " " + this.date.hour.toString() + ":" + this.date.minute.toString();
+    return (this.date.day < 0 ? '10' + this.date.day.toString() : this.date.day.toString()) + "/" +
+     (this.date.month < 0 ? '10' + this.date.month.toString() : this.date.month.toString()) + "/" + 
+     this.date.year.toString() + " " + (this.date.hour < 0 ? '10' + this.date.hour.toString() : this.date.hour.toString()) + ":" + 
+     (this.date.minute < 0 ? '10' + this.date.minute.toString() : this.date.minute.toString()) + ":" + 
+     (this.date.second < 0 ? '10' + this.date.second.toString() : this.date.second.toString());
   }
 
   close() {
@@ -36,6 +40,7 @@ class HistoryItem {
   Widget build() {
     return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[Text("Hello!!")]);
+        children: <Widget>[Image.network(this.imagePath)]
+    );
   }
 }

@@ -17,6 +17,13 @@ exports.startAlarm = async function (req, res, next) {
 
         child_proccess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
+            
+            createHistory({
+                type: "Alert!",
+                imagePath: data, //TODO: Change later
+                user: req.user
+            }, res, next)
+
         });
 
         child_proccess.stderr.on('data', function (data) {
