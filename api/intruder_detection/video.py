@@ -3,7 +3,7 @@ import cv2
 import sys
 import datetime
 
-assetsDir = "../../../assets/"
+assetsDir = "assets/"
 
 def check_frame(frame, timestamp, avg):
 

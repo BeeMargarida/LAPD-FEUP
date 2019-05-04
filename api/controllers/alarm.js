@@ -13,7 +13,8 @@ let intervalId;
 exports.startAlarm = async function (req, res, next) {
     try {
         var spawn = require('child_process').spawn;
-        child_proccess = spawn('python3',['/intruder_detection/video.py']);
+	child_proccess = spawn('ls');
+        child_proccess = spawn('python3',['intruder_detection/video.py']);
     
         child_proccess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
@@ -28,8 +29,11 @@ exports.startAlarm = async function (req, res, next) {
             imagePath: null, //TODO: Change later
             user: req.user
         }, res, next);
-        
-        return res.status(200).json(history);
+	
+	history.then((result) => {
+	    console.log(result);
+            return res.status(200).json(result);
+	});
     }
     catch(err) {
         return next({ message: "An error occurred while turning on the alarm. Please try again later."})
@@ -37,16 +41,21 @@ exports.startAlarm = async function (req, res, next) {
 }
 
 exports.stopAlarm = async function (req, res, next) {
-    child_proccess.kill();
-    child_proccess = null;
-    
-    createHistory({
-        type: "Turn Off Alarm",
-        imagePath: null, //TODO: Change later
-        user: req.user
-    }, res, next);
+    if(child_process != null) {
+	child_proccess.kill();
+    	child_proccess = null;
 
-    return res.status(200);
+   	let history =  createHistory({
+        	type: "Turn Off Alarm",
+        	imagePath: null, //TODO: Change later
+        	user: req.user
+   	 }, res, next);
+
+    	history.then((result) => {
+        	return res.status(200).json(result);
+   	 });
+     }
+     return res.status(200);
 }
 
 exports.getAlarmState = async function (req, res, next) {
