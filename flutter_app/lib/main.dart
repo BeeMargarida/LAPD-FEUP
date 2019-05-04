@@ -250,11 +250,13 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       Map historyItem = jsonDecode(res.body);
       setState(() {
         _alarmOn = value;
+
         // TODO: Not working!!
-        // _historyItems.add(HistoryItem(
-        //     event: historyItem["type"],
-        //     date: DateTime.parse(historyItem["createdAt"]),
-        //     isExpanded: false));
+        _historyItems.insert(0, HistoryItem(
+            event: historyItem["type"],
+            imagePath: historyItem["imagePath"],
+            date: DateTime.parse(historyItem["createdAt"]),
+            isExpanded: false));
       });
 
     }
@@ -292,6 +294,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         historyItems.forEach((item) => {
               _historyItems.add(HistoryItem(
                   event: item["type"],
+                  imagePath: item["imagePath"],
                   date: DateTime.parse(item["createdAt"]),
                   isExpanded: false))
             });
