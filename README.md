@@ -10,6 +10,14 @@ Los Angeles Police Department Home Security System
 * Run mongo in a terminal (if you have Linux), by running the command ``` mongodb ``` or the shell ``` mongo ```
 * In the folder *api*, run ``` npm install ```
 * In the folder *api*, run ``` pip3 install -r requirements.txt ```
+* Run: 
+```
+    sudo apt-get install libatlas-base-dev
+    sudo apt-get install libjasper-dev
+    sudo apt-get install libqtgui4
+    sudo apt-get install python3-pyqt5
+    sudo apt-get install libqt4-test
+```
 
 
 ### Run
