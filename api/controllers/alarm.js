@@ -6,7 +6,7 @@ const cv = require('opencv4nodejs');
 
 const { createHistory } = require("./history");
 
-let child_proccess;
+let child_proccess = null;
 let wCap;
 let intervalId;
 
@@ -27,17 +27,18 @@ exports.startAlarm = async function (req, res, next) {
         return next({ message: "An error occurred while turning on the alarm. Please try again later."})
     }
 
-    createHistory({
+    let history = createHistory({
         type: "Turn On Alarm",
         imagePath: null, //TODO: Change later
         user: req.user
     }, res, next);
 
-    return res.status(200);
+    return res.status(200).json(history);
 }
 
 exports.stopAlarm = async function (req, res, next) {
     child_proccess.kill();
+    child_proccess = null;
     
     createHistory({
         type: "Turn Off Alarm",
@@ -46,6 +47,13 @@ exports.stopAlarm = async function (req, res, next) {
     }, res, next);
 
     return res.status(200);
+}
+
+exports.getAlarmState = async function (req, res, next) {
+    if (child_proccess == null) {
+        return res.status(200).json({ alarm: false })
+    }
+    return res.status(200).json({ alarm: true })
 }
 
 exports.getLiveStream = function (req, res, next) {

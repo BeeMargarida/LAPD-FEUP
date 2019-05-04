@@ -192,9 +192,25 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   bool _canLoadMore = true;
   ScrollController _scrollController = ScrollController();
 
-  void _toggleAlarm(bool value) {
+  Future<void> _toggleAlarm(bool value) async {
     this.alarmOn = value;
     //TODO: Make request to API
+    var res = await http.post(
+        Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/start'),
+        headers: {
+          "Authorization": "Bearer " + _loggedUserData.token,
+          "Accept": "application/json"
+        }
+    );
+
+    if (res.statusCode != 200)
+      return Future<bool>.value(false);
+    else {
+      Map historyItem = jsonDecode(res.body);
+      _historyItems.add(HistoryItem(event: historyItem["type"], date: DateTime.parse(historyItem["createdAt"]), isExpanded: false));
+    }
+
+
   }
 
   @override
@@ -247,6 +263,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       return Future<bool>.value(false);
     else {
       List historyItems = jsonDecode(res.body);
+      print(historyItems.length);
       if(historyItems.length < _itemsPerPage)
         _canLoadMore = false;
       setState((){
