@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
+import 'package:flutter_app/livestream.dart';
+import 'package:flutter_app/user_info.dart';
 
 void main() => runApp(MyApp());
 
@@ -29,15 +31,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class LoginData {
-  String email = '';
-  String password = '';
-}
-
-class UserData {
-  LoginData loginData;
-  String token = '';
-}
 
 class LogInView extends StatefulWidget {
   @override
@@ -412,7 +405,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
           controller: tabController,
           children: [
             listItem,
-            Container(color: Colors.grey),
+            Livestream(loggedUserData: _loggedUserData)
           ],
         ),
       ),
