@@ -1,31 +1,22 @@
-import numpy as np
+import base64
 import cv2
-import sys
-import argparse
+import zmq
 
-cap = None
+context = zmq.Context()
+footage_socket = context.socket(zmq.PUB)
+footage_socket.connect('tcp://localhost:5555')
 
-def startLivestream():
-    cap = cv2.VideoCapture(0)
-    print(cap)
+camera = cv2.VideoCapture(0)  # init the camera
 
-    while(cap.isOpened()):
-        ret, frame = cap.read()
-        if ret==True:
-            print(frame)
-            sys.stdout.flush()
+while True:
+    try:
+        grabbed, frame = camera.read()  # grab the current frame
+        frame = cv2.resize(frame, (640, 480))  # resize the frame
+        encoded, buffer = cv2.imencode('.jpg', frame)
+        jpg_as_text = base64.b64encode(buffer)
+        footage_socket.send(jpg_as_text)
 
-# def stopLivestream(cap):
-#     if cap is not None:
-#         cap.release()
-#         cap = None
-
-if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-opt", "--option", type=int, required=True,
-	help="0 - Livestream OFF | 1 - Livestream ON")
-    args = vars(ap.parse_args())
-
-    if args["option"] == 1:
-        startLivestream()
-
+    except KeyboardInterrupt:
+        camera.release()
+        cv2.destroyAllWindows()
+        break
