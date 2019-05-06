@@ -70,7 +70,7 @@ exports.getAlarmState = async function (req, res, next) {
     return res.status(200).json({ alarm: true })
 }
 
-exports.getLiveStream = function (req, res, next) {
+exports.getLiveStream = async function (req, res, next) {
     // wCap = new cv.VideoCapture(0);
 
     // intervalId = setInterval(() => {
@@ -81,7 +81,7 @@ exports.getLiveStream = function (req, res, next) {
 
     try {
         var spawn = require('child_process').spawn;
-        livestream = spawn('python3', ['intruder_detection/video.py']);
+        livestream = spawn('python3', ['intruder_detection/livestream.py']);
 
         livestream.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
@@ -90,7 +90,7 @@ exports.getLiveStream = function (req, res, next) {
         livestream.stderr.on('data', function (data) {
             console.log('stderr: ' + data);
         });
-        return res.status(200);
+        return res.status(200).json({});
     }
     catch (err) {
         return next({ message: "An error occurred while turning on the livestream. Please try again later." })
@@ -98,12 +98,12 @@ exports.getLiveStream = function (req, res, next) {
 
 }
 
-exports.stopLiveStream = function (req, res, next) {
+exports.stopLiveStream = async function (req, res, next) {
     if (livestream != null) {
         livestream.kill();
         livestream = null;
     }
-    return res.status(200);
+    return res.status(200).json({});
 }
 
 server.listen(3030)
