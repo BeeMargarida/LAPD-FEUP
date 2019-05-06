@@ -6,16 +6,17 @@ const cv = require('opencv4nodejs');
 
 const { createHistory } = require("./history");
 
-let child_proccess = null;
+let alarm = null;
+let livestream = null;
 let wCap;
 let intervalId;
 
 exports.startAlarm = async function (req, res, next) {
     try {
         var spawn = require('child_process').spawn;
-        child_proccess = spawn('python3', ['intruder_detection/video.py']);
+        alarm = spawn('python3', ['intruder_detection/video.py']);
 
-        child_proccess.stdout.on('data', function (data) {
+        alarm.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
             
             createHistory({
@@ -26,7 +27,7 @@ exports.startAlarm = async function (req, res, next) {
 
         });
 
-        child_proccess.stderr.on('data', function (data) {
+        alarm.stderr.on('data', function (data) {
             console.log('stderr: ' + data);
         });
 
@@ -46,9 +47,9 @@ exports.startAlarm = async function (req, res, next) {
 }
 
 exports.stopAlarm = async function (req, res, next) {
-    if (child_proccess != null) {
-        child_proccess.kill();
-        child_proccess = null;
+    if (alarm != null) {
+        alarm.kill();
+        alarm = null;
 
         createHistory({
             type: "Turn Off Alarm",
@@ -70,19 +71,38 @@ exports.getAlarmState = async function (req, res, next) {
 }
 
 exports.getLiveStream = function (req, res, next) {
-    wCap = new cv.VideoCapture(0);
+    // wCap = new cv.VideoCapture(0);
 
-    intervalId = setInterval(() => {
-        const frame = wCap.read();
-        const image = cv.imencode('.jpg', frame).toString('base64');
-        io.emit('image', image);
-    }, 100)
+    // intervalId = setInterval(() => {
+    //     const frame = wCap.read();
+    //     const image = cv.imencode('.jpg', frame).toString('base64');
+    //     io.emit('image', image);
+    // }, 100)
 
-    return res.status(200);
+    try {
+        var spawn = require('child_process').spawn;
+        livestream = spawn('python3', ['intruder_detection/video.py']);
+
+        livestream.stdout.on('data', function (data) {
+            console.log('stdout: ' + data);
+        });
+
+        livestream.stderr.on('data', function (data) {
+            console.log('stderr: ' + data);
+        });
+        return res.status(200);
+    }
+    catch (err) {
+        return next({ message: "An error occurred while turning on the livestream. Please try again later." })
+    }
+
 }
 
 exports.stopLiveStream = function (req, res, next) {
-    clearInterval(intervalId);
+    if (livestream != null) {
+        livestream.kill();
+        livestream = null;
+    }
     return res.status(200);
 }
 
