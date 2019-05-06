@@ -39,11 +39,12 @@ class _LivestreamState extends State<Livestream> {
     else {
       try {
 
-        Socket s = await Socket.connect('tcp://178.166.11.252', 5555);  
+        Socket s = await Socket.connect(Configs.LIVESTREAM_HOST, Configs.LIVESTREAM_PORT);  
         setState(() {
           this.socket = s;
           this.readSocket = true;
         });
+        this._listenSocket();
 
       }
       catch (e){
@@ -60,9 +61,12 @@ class _LivestreamState extends State<Livestream> {
   void dataHandler(List<int> data) {
     print(data);
     String dataString = new String.fromCharCodes(data).trim();
-    //Uint8List bytes = base64.decode(dataString);
+    print(dataString);
+    Uint8List bytes = base64.decode(dataString);
     //String stringData = new String.fromCharCodes(data);
-    //this.image = Image.memory(bytes);
+    setState(() {
+      this.image = Image.memory(bytes);
+    });
   }
 
   void errorHandler(error, StackTrace trace) {
@@ -70,14 +74,15 @@ class _LivestreamState extends State<Livestream> {
   }
 
   void doneHandler() {
+    print('here');
     socket.destroy();
   }
 
   @override
   Widget build(BuildContext context) {
-    if(this.readSocket) {
-      this._listenSocket();
-    }
+    // if(this.readSocket) {
+    //   this._listenSocket();
+    // }
 
     return Wrap(
       alignment: WrapAlignment.center,
