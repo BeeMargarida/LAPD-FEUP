@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
-const server = require('http').Server(app);
-const io = require('socket.io')(server, { origins: '*:*' });
+//const server = require('http').Server(app);
+//const io = require('socket.io')(server, { origins: '*:*' });
 const cv = require('opencv4nodejs');
 
 const { createHistory } = require("./history");
@@ -64,37 +64,33 @@ exports.stopAlarm = async function (req, res, next) {
 }
 
 exports.getAlarmState = async function (req, res, next) {
-    if (child_proccess == null) {
+    if (alarm == null) {
         return res.status(200).json({ alarm: false })
     }
     return res.status(200).json({ alarm: true })
 }
 
 exports.getLiveStream = async function (req, res, next) {
-    // wCap = new cv.VideoCapture(0);
+    if(livestream != null) {
+    	try {
+		console.log("Starting livestreaming");
+        	var spawn = require('child_process').spawn;
+        	livestream = spawn('python3', ['intruder_detection/livestream.py']);
 
-    // intervalId = setInterval(() => {
-    //     const frame = wCap.read();
-    //     const image = cv.imencode('.jpg', frame).toString('base64');
-    //     io.emit('image', image);
-    // }, 100)
+	        livestream.stdout.on('data', function (data) {
+        	    console.log('stdout: ' + data);
+        	});
 
-    try {
-        var spawn = require('child_process').spawn;
-        livestream = spawn('python3', ['intruder_detection/livestream.py']);
-
-        livestream.stdout.on('data', function (data) {
-            console.log('stdout: ' + data);
-        });
-
-        livestream.stderr.on('data', function (data) {
-            console.log('stderr: ' + data);
-        });
-        return res.status(200).json({});
-    }
-    catch (err) {
-        return next({ message: "An error occurred while turning on the livestream. Please try again later." })
-    }
+	        livestream.stderr.on('data', function (data) {
+        	    console.log('stderr: ' + data);
+	        });
+	        return res.status(200).json({});
+    	}
+    	catch (err) {
+        	return next({ message: "An error occurred while turning on the livestream. Please try again later." })
+    	}
+     }
+     return res.status(200).json({});
 
 }
 
@@ -106,4 +102,4 @@ exports.stopLiveStream = async function (req, res, next) {
     return res.status(200).json({});
 }
 
-server.listen(3030)
+//server.listen(3030)
