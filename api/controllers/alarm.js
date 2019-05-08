@@ -1,13 +1,13 @@
 const express = require("express");
 const app = express();
-//const server = require('http').Server(app);
-//const io = require('socket.io')(server, { origins: '*:*' });
+const server = require('http').Server(app);
+const io = require('socket.io')(server, { origins: '*:*' });
 const cv = require('opencv4nodejs');
 
 const { createHistory } = require("./history");
 
 let alarm = null;
-let livestream = null;
+let livestream = false;//null;
 let wCap;
 let intervalId;
 
@@ -71,7 +71,7 @@ exports.getAlarmState = async function (req, res, next) {
 }
 
 exports.getLiveStream = async function (req, res, next) {
-    if(livestream != null) {
+    /*if(livestream != null) {
     	try {
 		console.log("Starting livestreaming");
         	var spawn = require('child_process').spawn;
@@ -89,17 +89,46 @@ exports.getLiveStream = async function (req, res, next) {
     	catch (err) {
         	return next({ message: "An error occurred while turning on the livestream. Please try again later." })
     	}
-     }
-     return res.status(200).json({});
+     }*/
+
+    livestream = true;
+    streamVideo();
+    return res.status(200).json({});
 
 }
 
 exports.stopLiveStream = async function (req, res, next) {
-    if (livestream != null) {
+    /*if (livestream != null) {
         livestream.kill();
         livestream = null;
-    }
+    }*/
+    livestream = false;
+    clearInterval(intervalId);
+    intervalId = null;
     return res.status(200).json({});
 }
 
-//server.listen(3030)
+function streamVideo() {
+    io.on('connection', function(socket) {
+        console.log("Connected");
+        
+        wCap = new cv.VideoCapture(0);
+        
+        intervalId = setInterval(sendLivestream,0.001);
+        sendLivestream();
+        
+    });
+}
+
+const sendLivestream = () => {
+    if(livestream){
+        let frame = wCap.read();
+        frame = frame.resize(640, 480);
+        const outBase64 =  cv.imencode('.jpg', frame).toString('base64');
+        io.sockets.emit('image', outBase64);
+        io.emit('image', outBase64);
+    }
+}
+
+server.listen(5555)
+
