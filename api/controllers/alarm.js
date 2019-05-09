@@ -7,8 +7,7 @@ const cv = require('opencv4nodejs');
 const { createHistory } = require("./history");
 
 let alarm = null;
-let livestream = false;//null;
-let wCap;
+let wCap = null;
 let intervalId;
 
 exports.startAlarm = async function (req, res, next) {
@@ -91,7 +90,6 @@ exports.getLiveStream = async function (req, res, next) {
     	}
      }*/
 
-    livestream = true;
     streamVideo();
     return res.status(200).json({});
 
@@ -102,32 +100,32 @@ exports.stopLiveStream = async function (req, res, next) {
         livestream.kill();
         livestream = null;
     }*/
-    livestream = false;
     clearInterval(intervalId);
     intervalId = null;
+    wCap.release();
+    wCap = null;
     return res.status(200).json({});
 }
 
 function streamVideo() {
     io.on('connection', function(socket) {
+        
         console.log("Connected");
+        if(wCap == null) {
+            wCap = new cv.VideoCapture(0);
+        }
         
-        wCap = new cv.VideoCapture(0);
-        
-        intervalId = setInterval(sendLivestream,0.001);
-        sendLivestream();
+        intervalId = setInterval(sendLivestream,1000/60);
+        //sendLivestream(socket);
         
     });
 }
 
 const sendLivestream = () => {
-    if(livestream){
-        let frame = wCap.read();
-        frame = frame.resize(640, 480);
-        const outBase64 =  cv.imencode('.jpg', frame).toString('base64');
-        io.sockets.emit('image', outBase64);
-        io.emit('image', outBase64);
-    }
+    let frame = wCap.read();
+    frame = frame.resize(640, 480);
+    const outBase64 =  cv.imencode('.jpg', frame).toString('base64');
+    io.sockets.emit('image', outBase64);
 }
 
 server.listen(5555)
