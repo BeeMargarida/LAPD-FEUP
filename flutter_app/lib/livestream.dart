@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter_socket_io/flutter_socket_io.dart';
+import 'package:flutter_socket_io/socket_io_manager.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -17,7 +18,7 @@ class Livestream extends StatefulWidget {
 }
 
 class _LivestreamState extends State<Livestream> {
-  Socket socket;
+  SocketIO socketIO;
   Image image;
   bool readSocket = false;
 
@@ -25,6 +26,10 @@ class _LivestreamState extends State<Livestream> {
   void initState() {
     super.initState();
     this._getStream();
+  }
+
+  _socketStatus(dynamic data) {
+    print("Socket status: " + data);
   }
 
   Future<void> _getStream() async {
@@ -38,34 +43,22 @@ class _LivestreamState extends State<Livestream> {
       return Future<bool>.value(false);
     else {
       try {
+        socketIO = SocketIOManager().createSocketIO("http://178.166.11.252:5555", "/", socketStatusCallback: _socketStatus);
+        socketIO.init();
+        socketIO.subscribe("image", dataHandler);
+        socketIO.connect();
 
-        Socket s = await Socket.connect(Configs.LIVESTREAM_HOST, Configs.LIVESTREAM_PORT);  
-        setState(() {
-          this.socket = s;
-          this.readSocket = true;
-        });
-        this._listenSocket();
-
-      }
-      catch (e){
+      } catch (e) {
         print("Unable to connect: $e");
       }
     }
   }
 
-  void _listenSocket() async {
-    this.socket.listen(dataHandler,
-          onError: errorHandler, onDone: doneHandler, cancelOnError: false);
-  }
 
-  void dataHandler(List<int> data) {
-    print(data);
-    String dataString = new String.fromCharCodes(data).trim();
-    print(dataString);
-    Uint8List bytes = base64.decode(dataString);
-    //String stringData = new String.fromCharCodes(data);
+  void dataHandler(String data) {
+    Uint8List bytes = base64.decode(data);
     setState(() {
-      this.image = Image.memory(bytes);
+      this.image = Image.memory(bytes, fit: BoxFit.contain);
     });
   }
 
@@ -74,16 +67,11 @@ class _LivestreamState extends State<Livestream> {
   }
 
   void doneHandler() {
-    print('here');
-    socket.destroy();
+    SocketIOManager().destroySocket(socketIO); 
   }
 
   @override
   Widget build(BuildContext context) {
-    // if(this.readSocket) {
-    //   this._listenSocket();
-    // }
-
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -98,8 +86,10 @@ class _LivestreamState extends State<Livestream> {
     );
   }
 
-  // @override 
-  // void dispose() {
-    
-  // }
+  @override
+  void dispose() {
+    super.dispose();
+    socketIO.disconnect();
+    SocketIOManager().destroySocket(socketIO);
+  }
 }
