@@ -5,59 +5,53 @@ const io = require('socket.io')(server, { origins: '*:*' });
 const cv = require('opencv4nodejs');
 
 const { createHistory } = require("./history");
+const { runWebcamObjectDetect } = require("./detection");
+const { opencvSettings } = require('../config/config');
 
 let alarm = null;
+let alarmOn = false;
+let livestream = false;
 let wCap = null;
-let intervalId;
 
 exports.startAlarm = async function (req, res, next) {
-    try {
-        var spawn = require('child_process').spawn;
-        alarm = spawn('python3', ['intruder_detection/video.py']);
 
-        alarm.stdout.on('data', function (data) {
-            console.log('stdout: ' + data);
-            
-            createHistory({
-                type: "Alert!",
-                imagePath: data, //TODO: Change later
-                user: req.user
-            }, res, next)
+    alarmOn = true;
+    if(wCap == null) {
+        wCap = new cv.VideoCapture(opencvSettings.camPort);
+    }
 
-        });
+    alarm = runWebcamObjectDetect(wCap, alarmOn, livestream, io, req, res, next);
 
-        alarm.stderr.on('data', function (data) {
-            console.log('stderr: ' + data);
-        });
-
-        createHistory({
-            type: "Turn On Alarm",
-            imagePath: null, //TODO: Change later
-            user: req.user
-        }, res, next)
+    createHistory({
+        type: "Turn On Alarm",
+        imagePath: null, //TODO: Change later
+        user: req.user
+    }, res, next)
         .then((result) => {
-            console.log(result);
             return res.status(200).json(result);
         });
-    }
-    catch (err) {
-        return next({ message: "An error occurred while turning on the alarm. Please try again later." })
-    }
 }
 
 exports.stopAlarm = async function (req, res, next) {
-    if (alarm != null) {
-        alarm.kill();
-        alarm = null;
+    if (alarmOn) {
+        
+        if(!livestream){
+            clearInterval(alarm);
+            alarm = null;
+            wCap.release();
+            wCap = null;
+        }
+
+        alarmOn = false;
 
         createHistory({
             type: "Turn Off Alarm",
             imagePath: null, //TODO: Change later
             user: req.user
         }, res, next)
-        .then((result) => {
-            return res.status(200).json(result);
-        });
+            .then((result) => {
+                return res.status(200).json(result);
+            });
     }
     return res.status(200);
 }
@@ -70,62 +64,26 @@ exports.getAlarmState = async function (req, res, next) {
 }
 
 exports.getLiveStream = async function (req, res, next) {
-    /*if(livestream != null) {
-    	try {
-		console.log("Starting livestreaming");
-        	var spawn = require('child_process').spawn;
-        	livestream = spawn('python3', ['intruder_detection/livestream.py']);
 
-	        livestream.stdout.on('data', function (data) {
-        	    console.log('stdout: ' + data);
-        	});
+    if(wCap == null) {
+        wCap = new cv.VideoCapture(opencvSettings.camPort);
+    }
+    
+    livestream = true;
 
-	        livestream.stderr.on('data', function (data) {
-        	    console.log('stderr: ' + data);
-	        });
-	        return res.status(200).json({});
-    	}
-    	catch (err) {
-        	return next({ message: "An error occurred while turning on the livestream. Please try again later." })
-    	}
-     }*/
+    if(alarm != null){
+        clearInterval(alarm);
+    }
 
-    streamVideo();
+    alarm = runWebcamObjectDetect(wCap, alarmOn, livestream, io, req, res, next); // Review this!
     return res.status(200).json({});
-
 }
 
 exports.stopLiveStream = async function (req, res, next) {
-    /*if (livestream != null) {
-        livestream.kill();
-        livestream = null;
-    }*/
-    clearInterval(intervalId);
-    intervalId = null;
-    wCap.release();
-    wCap = null;
+    livestream = false;
+    clearInterval(alarm);
+    alarm = runWebcamObjectDetect(wCap, alarmOn, livestream, io, req, res, next); // Review this!
     return res.status(200).json({});
-}
-
-function streamVideo() {
-    io.on('connection', function(socket) {
-        
-        console.log("Connected");
-        if(wCap == null) {
-            wCap = new cv.VideoCapture(0);
-        }
-        
-        intervalId = setInterval(sendLivestream,1000/60);
-        //sendLivestream(socket);
-        
-    });
-}
-
-const sendLivestream = () => {
-    let frame = wCap.read();
-    frame = frame.resize(640, 480);
-    const outBase64 =  cv.imencode('.jpg', frame).toString('base64');
-    io.sockets.emit('image', outBase64);
 }
 
 server.listen(5555)
