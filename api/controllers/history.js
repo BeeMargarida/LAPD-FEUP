@@ -14,7 +14,6 @@ exports.createHistory = async function (data, res, next) {
         return history;
 
     } catch (err) {
-	console.log(err);
         return next({
             status: 400,
             message: "An error occurred while creating an history entry."
