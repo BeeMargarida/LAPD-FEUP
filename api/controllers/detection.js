@@ -159,22 +159,22 @@ module.exports = function (socket) {
 exports.runWebcamObjectDetect = function (camera, socket, alarmOn, livestreamOn, user) {
 
     let intervalId = setInterval(function () {
-        camera.readAsync(function (err, frame) {
-            if (err) throw err;
-            if (frame.empty) return;
-
-            if (livestreamOn && socket != null) {
-                socket.emit('frame', { buffer: cv.imencode('.png', frame).toString('base64') });
-            }
-            if (alarmOn) {
-                objectDetect(frame, user);
-            }
-
-        });
-
-
+        readFrame(camera, socket, alarmOn, livestreamOn, user).
+            catch((err) => { throw err;});
     }, camInterval);
 
     return intervalId;
 
 };
+
+async function readFrame(camera, socket, alarmOn, livestreamOn, user){
+    const frame = camera.read();
+    if (frame.empty) return;
+
+    if (livestreamOn && socket != null) {
+        socket.emit('frame', { buffer: cv.imencode('.png', frame).toString('base64') });
+    }
+    if (alarmOn) {
+        objectDetect(frame, user);
+    }
+}
