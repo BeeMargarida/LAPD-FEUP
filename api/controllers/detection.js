@@ -15,13 +15,13 @@ const configPath = path.resolve(
     '../intruder_detection/models/ssd_mobilenet_v2_coco_2018_03_29.pbtxt'
 );
 
-if (!fs.existsSync(modelPath) || !fs.existsSync(configPath)) {
+/*if (!fs.existsSync(modelPath) || !fs.existsSync(configPath)) {
     console.log('could not find tensorflow object detection model');
     console.log(
         'download the model from: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API#use-existing-config-file-for-your-model'
     );
-    throw new Error('exiting: could not find tensorflow object detection model');
-}
+    //throw new Error('exiting: could not find tensorflow object detection model');
+}*/
 
 // initialize tensorflow darknet model from modelFile
 const net = cv.readNetFromTensorflow(modelPath, configPath);
@@ -29,10 +29,10 @@ const net = cv.readNetFromTensorflow(modelPath, configPath);
 const assetsDir = "assets/"
 // set webcam interval
 const camInterval = 1000 / opencvSettings.camFps;
-let alert = false;
+let lastAlert = new Date();
 let pathAlert = "";
 
-const objectDetect = (img) => {
+const objectDetect = async (img, user) => {
     // object detection model works with 300 x 300 images
     const size = new cv.Size(300, 300);
     const vec3 = new cv.Vec(0, 0, 0);
@@ -52,10 +52,15 @@ const objectDetect = (img) => {
     for (let y = 0; y < numRows; y += 1) {
         const confidence = outputBlob.at([0, 0, y, 2]);
         if (confidence > 0.5) {
-            const classId = outputBlob.at([0, 0, y, 1]);
 
-            if (classId == 1) {
-                alert = true;
+            const classId = outputBlob.at([0, 0, y, 1]);
+            let timestamp = new Date();
+            let diff = (timestamp - lastAlert) / 1000;
+
+            if (classId == 1 && (diff > opencvSettings.secondsDiff)) {
+
+                lastAlert = timestamp;
+
                 const className = classNames[classId];
                 const boxX = imgWidth * outputBlob.at([0, 0, y, 3]);
                 const boxY = imgHeight * outputBlob.at([0, 0, y, 4]);
@@ -81,9 +86,17 @@ const objectDetect = (img) => {
                 // put text on the object
                 img.putText(text, org, fontFace, fontScale, textColor, thickness);
 
-                let timestamp = Date.now();
-                pathAlert = "alerts/" + "alert_" + timestamp + ".png";
+                pathAlert = "alerts/" + "alert_" + timestamp.toISOString() + ".png";
                 cv.imwrite(assetsDir + pathAlert, img);
+
+                createHistory({
+                    type: "Alert!",
+                    imagePath: pathAlert,
+                    user: user
+                })
+                    .then(() => { })
+                    .catch((err) => console.log(err));
+
             }
         }
     }
@@ -91,36 +104,79 @@ const objectDetect = (img) => {
     // return the jpg image
     return cv.imencode('.jpg', img);
 };
+/*
+const cam = new cv.VideoCapture(opencvSettings.camPort);
 
-exports.runWebcamObjectDetect = async function (cam, alarmOn, livestream, io, req, res, next) {
+module.exports = function (socket) {
+    setInterval(function () {
+
+        cam.readAsync(function (err, frame) {
+           
+            if (err) console.log(err);
+            if (!frame.empty) return;
+            socket.emit('frame', { buffer: cv.imencode('.png', frame) });
+        
+        });
+
+
+    }, camInterval);
+    
+    
     alert = false;
     pathAlert = "";
 
     let intervalId = setInterval(() => {
-        cam.readAsync(function (err, frame) {
-            if (err || !frame) return next({ message: "An error occurred while turning on the alarm. Please try again later." });
-
+        let frame = cam.read();
+        // detect objects
+        let img = frame;
+        if (alarmOn) {
+            console.log("Alarm On");
             const frameResized = frame.resizeToMax(opencvSettings.frameSize);
-            // detect objects
-            let img = frameResized;
+            img = objectDetect(frameResized);
+        }
+
+        io.emit('image',  { buffer: cv.imencode('.png',frame) });    
+        if (livestream) {
+        }
+
+        if (alert) {
+            createHistory({
+                type: "Alert!",
+                imagePath: path,
+                user: req.user
+            }, res, next);
+        }
+    }, camInterval);
+    
+
+    //return intervalId;
+}
+*/
+
+// initialize camera
+
+
+exports.runWebcamObjectDetect = function (camera, socket, alarmOn, livestreamOn, user) {
+
+    let intervalId = setInterval(function () {
+        camera.readAsync(function (err, frame) {
+            if (err) throw err;
+            if (frame.empty) return;
+
+            if (livestreamOn && socket != null) {
+                console.log(frame);
+                socket.emit('frame', { buffer: cv.imencode('.png', frame) });
+            }
+            
             if (alarmOn) {
-                img = objectDetect(frameResized);
+                objectDetect(frame, user);
             }
 
-            if (livestream) {
-                img = cv.imencode('.jpg', img);
-                io.sockets.emit('image', img);
-            }
+        });
 
-            if (alert) {
-                createHistory({
-                    type: "Alert!",
-                    imagePath: path,
-                    user: req.user
-                }, res, next);
-            }
-        })
+
     }, camInterval);
 
     return intervalId;
-}
+
+};

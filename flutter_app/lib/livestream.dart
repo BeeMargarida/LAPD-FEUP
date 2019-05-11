@@ -24,6 +24,7 @@ class _LivestreamState extends State<Livestream> {
 
   @override
   void initState() {
+    print("START");
     super.initState();
     this._getStream();
   }
@@ -43,9 +44,9 @@ class _LivestreamState extends State<Livestream> {
       return Future<bool>.value(false);
     else {
       try {
-        socketIO = SocketIOManager().createSocketIO("http://178.166.11.252:5555", "/", socketStatusCallback: _socketStatus);
+        socketIO = SocketIOManager().createSocketIO("http://192.168.1.71:3000", "/", socketStatusCallback: _socketStatus);
         socketIO.init();
-        socketIO.subscribe("image", dataHandler);
+        socketIO.subscribe("frame", dataHandler);
         socketIO.connect();
 
       } catch (e) {
@@ -54,11 +55,31 @@ class _LivestreamState extends State<Livestream> {
     }
   }
 
+  Future<void> _stopStream() async {
+    var res = await http.post(
+        Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/livestream/stop'),
+        headers: {
+          "Authorization": "Bearer " + widget.loggedUserData.token,
+          "Accept": "application/json"
+        });
+    if (res.statusCode != 200)
+      return Future<bool>.value(false);
+    else {
+     return Future<bool>.value(true); 
+    }
+  }
+
 
   void dataHandler(String data) {
-    Uint8List bytes = base64.decode(data);
+    print("here");
+    Map dataJson = jsonDecode(data);
+    //Uint8List bytes = dataJson["buffer"];
+    print(dataJson["buffer"].runtimeType);
+    //Uint8List bytes = base64.decode(dataJson["buffer"]);
+    print("jere");
+    //print(bytes.toString());
     setState(() {
-      this.image = Image.memory(bytes, fit: BoxFit.contain);
+      //this.image = Image.memory(bytes, fit: BoxFit.contain);
     });
   }
 
@@ -90,6 +111,7 @@ class _LivestreamState extends State<Livestream> {
   void dispose() {
     super.dispose();
     socketIO.disconnect();
-    SocketIOManager().destroySocket(socketIO);
+    //SocketIOManager().destroySocket(socketIO);
+    this._stopStream();
   }
 }

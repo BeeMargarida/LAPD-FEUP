@@ -2,9 +2,11 @@ exports.opencvSettings = {
 	// set webcam port
 	camPort: 0,
 	// set webcam FPS
-	camFps: 60,
+	camFps: 10,
 	// set frame size
-	frameSize: 640
+	frameSize: 640,
+	//alert difference seconds
+	secondsDiff: 5
 };
 
 exports.server = {
