@@ -104,63 +104,18 @@ const objectDetect = async (img, user) => {
     // return the jpg image
     return cv.imencode('.jpg', img);
 };
-/*
-const cam = new cv.VideoCapture(opencvSettings.camPort);
-
-module.exports = function (socket) {
-    setInterval(function () {
-
-        cam.readAsync(function (err, frame) {
-           
-            if (err) console.log(err);
-            if (!frame.empty) return;
-            socket.emit('frame', { buffer: cv.imencode('.png', frame) });
-        
-        });
-
-
-    }, camInterval);
-    
-    
-    alert = false;
-    pathAlert = "";
-
-    let intervalId = setInterval(() => {
-        let frame = cam.read();
-        // detect objects
-        let img = frame;
-        if (alarmOn) {
-            console.log("Alarm On");
-            const frameResized = frame.resizeToMax(opencvSettings.frameSize);
-            img = objectDetect(frameResized);
-        }
-
-        io.emit('image',  { buffer: cv.imencode('.png',frame) });    
-        if (livestream) {
-        }
-
-        if (alert) {
-            createHistory({
-                type: "Alert!",
-                imagePath: path,
-                user: req.user
-            }, res, next);
-        }
-    }, camInterval);
-    
-
-    //return intervalId;
-}
-*/
-
-// initialize camera
 
 
 exports.runWebcamObjectDetect = function (camera, socket, alarmOn, livestreamOn, user) {
 
     let intervalId = setInterval(function () {
-        readFrame(camera, socket, alarmOn, livestreamOn, user).
-            catch((err) => { throw err;});
+        readFrame(camera, socket, alarmOn, livestreamOn, user)
+        .then((frame) => {
+          if(frame != null && alarmOn) {
+            objectDetect(frame, user);
+          }  
+        })
+        .catch((err) => { throw err;});
     }, camInterval);
 
     return intervalId;
@@ -169,12 +124,10 @@ exports.runWebcamObjectDetect = function (camera, socket, alarmOn, livestreamOn,
 
 async function readFrame(camera, socket, alarmOn, livestreamOn, user){
     const frame = camera.read();
-    if (frame.empty) return;
+    if (frame.empty) return null;
 
     if (livestreamOn && socket != null) {
         socket.emit('frame', { buffer: cv.imencode('.png', frame).toString('base64') });
     }
-    if (alarmOn) {
-        objectDetect(frame, user);
-    }
+    
 }
