@@ -60,7 +60,7 @@ exports.stopAlarm = async function (req, res, next) {
         if (!livestream) {
             clearInterval(alarm);
             alarm = null;
-            // stopCamera();
+            stopCamera();
         }
 
         alarmOn = false;
@@ -114,7 +114,7 @@ exports.stopLiveStream = function (req, res, next) {
     }
     else {
         alarm = null;
-        // stopCamera();
+        stopCamera();
     }
     return res.status(200).json({});
 }

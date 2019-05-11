@@ -1,5 +1,5 @@
 // MODIFY THIS TO THE APPROPRIATE URL IF IT IS NOT BEING RUN LOCALLY
-var socket = io.connect('http://localhost:3000');
+var socket = io.connect('http://178.166.11.252:3000');
 
 var canvas = document.getElementById('canvas-video');
 var context = canvas.getContext('2d');
