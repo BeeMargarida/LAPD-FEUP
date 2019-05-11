@@ -71,15 +71,10 @@ class _LivestreamState extends State<Livestream> {
 
 
   void dataHandler(String data) {
-    print("here");
     Map dataJson = jsonDecode(data);
-    //Uint8List bytes = dataJson["buffer"];
-    print(dataJson["buffer"].runtimeType);
-    //Uint8List bytes = base64.decode(dataJson["buffer"]);
-    print("jere");
-    //print(bytes.toString());
+    Uint8List bytes = base64.decode(dataJson["buffer"]);
     setState(() {
-      //this.image = Image.memory(bytes, fit: BoxFit.contain);
+      this.image = Image.memory(bytes, fit: BoxFit.contain);
     });
   }
 

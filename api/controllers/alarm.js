@@ -103,7 +103,7 @@ exports.getLiveStream = async function (req, res, next) {
     return res.status(200).json({});
 }
 
-exports.stopLiveStream = async function (req, res, next) {
+exports.stopLiveStream = function (req, res, next) {
     console.log("STOP LIVESTREAM");
     livestream = false;
     clearInterval(alarm);
