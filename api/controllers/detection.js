@@ -164,7 +164,6 @@ exports.runWebcamObjectDetect = function (camera, socket, alarmOn, livestreamOn,
             if (frame.empty) return;
 
             if (livestreamOn && socket != null) {
-                console.log(frame);
                 socket.emit('frame', { buffer: cv.imencode('.png', frame).toString('base64') });
             }
             if (alarmOn) {
