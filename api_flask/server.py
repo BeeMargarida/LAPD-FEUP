@@ -1,13 +1,17 @@
 import socket
 import subprocess
 from flask import Flask, render_template, Response
-from flask_cors import CORS
+#from flask_cors import CORS
+import threading
 from camera import Camera
+from detector import Detector
+import cv2
 app = Flask(__name__)
-CORS(app)
+#CORS(app)
 # keep runnign process global
 proc = None
-
+detector = None
+alarmThread = None
 # def get_ip_address():
 #     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 #     s.connect(("8.8.8.8", 80))
@@ -18,48 +22,43 @@ proc = None
 def hello():
     return render_template("page.html")
 
+@app.route("/alarm", methods=['GET'])
+def start_alarm():
+    global alarmOn
+    global alarmThread
+    alarmOn = True
+    alarmThread = threading.Thread(target=gen_alarm, args=(Camera(),))
+    alarmThread.start();
+    return Response(response="Alarm On!", status=200)
 
-@app.route("/start", methods=['GET', 'POST'])
-def start_talkingraspi():
-    global proc
-    print(" > Start talkingraspi!")
-    proc = subprocess.Popen(
-        ["python", "pi_surveillance.py", "-c", "conf.json"])
-    print(" > Process id {}".format(proc.pid))
-    return "Started!"
+@app.route("/alarm/stop", methods=['GET'])
+def stop_alarm():
+    global alarmOn
+    alarmOn = False
+    return Response(response="Alarm Off!", status=200)
 
-
-@app.route("/stop", methods=['GET', 'POST'])
-def stop_talkingraspi():
-    global proc
-    print(" > Stop talkingraspi!")
-    # subprocess.call(["kill", "-9", "%d" % proc.pid])
-    proc.kill()
-    print(" > Process {} killed!".format(proc.pid))
-    return "Stopped!"
-
-
-@app.route("/status", methods=['GET', 'POST'])
-def status_talkingraspi():
-    global proc
-    if proc is None:
-        print(" > Talkingraspi is resting")
-        return "Resting!"
-    if proc.poll() is None:
-        print(" > Talking raspi is running (Process {})!".format(proc.pid))
-        return "Running!"
-    else:
-        print(" > Talkingraspi is resting")
-        return "Stopped!"
-
+@app.route("/alarm/status", methods=['GET'])
+def status_alarm():
+    global alarmOn
+    message = "On"
+    if alarmOn == False:
+        message = "Off"
+    return Response(response=message, status=200)
 
 def gen(camera):
     """Video streaming generator function."""
     while True:
         frame = camera.get_frame()
+        #t = threading.Thread(target=detector.detect, args=(frame,))
+        #t.start()
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + cv2.imencode('.jpg', frame)[1].tobytes() + b'\r\n')
 
+def gen_alarm(camera):
+    while alarmOn:
+        frame = camera.get_frame()
+        detector.detect(frame)
+    return
 
 @app.route('/video_feed')
 def video_feed():
@@ -69,4 +68,5 @@ def video_feed():
 
 
 if __name__ == "__main__":
+    detector = Detector()
     app.run(host="0.0.0.0", port=5555, debug=False, threaded=True)
