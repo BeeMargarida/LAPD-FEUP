@@ -9,7 +9,7 @@ In the root of this folder:
     * ``` virtualenv venv ```
     * ``` . venv/bin/activate ```
 * Install dependencies:
-    * ``` pip3 install opencv-python Flask ```
+    * ``` pip3 install opencv-python Flask flask_mongoengine flask_login jwt```
 * Run Server:
     * ``` python3 server.py ```
 

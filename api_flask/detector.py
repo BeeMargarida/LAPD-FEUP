@@ -19,15 +19,6 @@ class Detector(object):
         with open(classesFile, 'rt') as f:
             self.classes = f.read().rstrip('\n').split('\n')
 
-        # Load the colors
-        colorsFile = "colors.txt"
-        with open(colorsFile, 'rt') as f:
-            colorsStr = f.read().rstrip('\n').split('\n')
-        for i in range(len(colorsStr)):
-            rgb = colorsStr[i].split(' ')
-            color = np.array([float(rgb[0]), float(rgb[1]), float(rgb[2])])
-            self.colors.append(color)
-
         modelConfiguration = "yolo/yolov3.cfg"
         modelWeights = "yolo/yolov3.weights"
 
