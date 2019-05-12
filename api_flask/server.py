@@ -3,6 +3,7 @@ import subprocess
 from flask import Flask, render_template, Response
 #from flask_cors import CORS
 import threading
+import datetime
 from camera import Camera
 from detector import Detector
 import cv2
@@ -57,7 +58,7 @@ def gen(camera):
 def gen_alarm(camera):
     while alarmOn:
         frame = camera.get_frame()
-        detector.detect(frame)
+        detector.detect(frame, datetime.datetime.now())
     return
 
 @app.route('/video_feed')
