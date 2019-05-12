@@ -1,0 +1,100 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,height=device-height initial-scale=1">
+  <title>TalkingRaspi</title>
+  <meta name="description" content="Talkingraspi interface">
+  <meta name="author" content="Eren Golge">
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  <script>
+    $(document).ready(function () {
+      $("#start_button").click(function (e) {
+        e.preventDefault();
+        $.ajax({
+          type: "POST",
+          url: "/start",
+          data: {},
+          success: function (result) {
+            $("#start_button").html(result);
+          }
+        });
+      });
+
+    });
+
+    $(document).ready(function () {
+      $("#stop_button").click(function (e) {
+        e.preventDefault();
+        $.ajax({
+          type: "POST",
+          url: "/stop",
+          data: {},
+          success: function (result) {
+            $("#stop_button").html(result);
+          }
+        });
+      });
+
+      (function worker() {
+        $.ajax({
+          url: '/status',
+          success: function (data) {
+            $('#status_bar').html(data);
+          },
+          complete: function () {
+            // Schedule the next request when the current one's complete
+            setTimeout(worker, 5000);
+          }
+        });
+      })();
+    });
+  </script>
+  <script>
+    var socket = io.connect('http://localhost:5555');
+
+    var canvas = document.getElementById('canvas-video');
+    var context = canvas.getContext('2d');
+    var img = new Image();
+
+    // show loading notice
+    context.fillStyle = '#333';
+    context.fillText('Loading...', canvas.width / 2 - 30, canvas.height / 3);
+
+    socket.on('frame', function (data) {
+      // Reference: http://stackoverflow.com/questions/24107378/socket-io-began-to-support-binary-stream-from-1-0-is-there-a-complete-example-e/24124966#24124966
+      // var uint8Arr = new Uint8Array(data.buffer);
+      // var str = String.fromCharCode.apply(null, uint8Arr);
+      // var base64String = btoa(str);
+      console.log(data);
+      img.onload = function () {
+        context.drawImage(this, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = 'data:image/png;base64,' + data;
+    });
+  </script>
+
+  <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+  <h1>Hi! This is Talkingraspi!</h1>
+  <span id="status_bar"></span>
+  </br>
+  </br>
+  <button id="start_button">Start Talkingraspi</button>
+  <button id="stop_button">Stop Talkingraspi</button>
+  <div class="container center">
+    <canvas id="canvas-video" width="640" height="480"></canvas>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+</body>
+
+</html>
