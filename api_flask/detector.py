@@ -2,7 +2,6 @@ import numpy as np
 import datetime
 import cv2
 
-
 class Detector(object):
 
     confThreshold = 0.5  # Confidence threshold
@@ -12,11 +11,11 @@ class Detector(object):
     net = None
     lastAlert = None
 
-    def __init__(self):
+    def __init__(self):        
         classesFile = "mscoco_labels.names"
         with open(classesFile, 'rt') as f:
             self.classes = f.read().rstrip('\n').split('\n')
-
+        
         # Load the colors
         colorsFile = "colors.txt"
         with open(colorsFile, 'rt') as f:
@@ -45,12 +44,52 @@ class Detector(object):
         # Extract the bounding box and mask for each of the detected objects
         self.postprocess(boxes, masks, frame)
 
+        return;
+
         # Put efficiency information.
-        t, _ = self.net.getPerfProfile()
-        label = 'Mask-RCNN : Inference time: %.2f ms' % (
-            t * 1000.0 / cv2.getTickFrequency())
-        cv2.putText(frame, label, (0, 15),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+        # t, _ = self.net.getPerfProfile()
+        # label = 'Mask-RCNN : Inference time: %.2f ms' % (
+        #     t * 1000.0 / cv2.getTickFrequency())
+        # cv2.putText(frame, label, (0, 15),
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+
+
+    def postprocess(self, boxes, masks, frame):
+        # Output size of masks is NxCxHxW where
+        # N - number of detected boxes
+        # C - number of classes (excluding background)
+        # HxW - segmentation shape
+        numClasses = masks.shape[1]
+        numDetections = boxes.shape[2]
+
+        frameH = frame.shape[0]
+        frameW = frame.shape[1]
+        for i in range(numDetections):
+            box = boxes[0, 0, i]
+            mask = masks[i]
+            score = box[2]
+            classId = int(box[1])
+            print(classId)
+            diff = (datetime.datetime.now() - self.lastAlert).total_seconds()
+            if (score > self.confThreshold and classId == 0 and diff > 20):
+
+                # Extract the bounding box
+                left = int(frameW * box[3])
+                top = int(frameH * box[4])
+                right = int(frameW * box[5])
+                bottom = int(frameH * box[6])
+
+                left = max(0, min(left, frameW - 1))
+                top = max(0, min(top, frameH - 1))
+                right = max(0, min(right, frameW - 1))
+                bottom = max(0, min(bottom, frameH - 1))
+
+                # Extract the mask for the object
+                classMask = mask[classId]
+
+                # Draw bounding box, colorize and show the mask on the image
+                self.drawBox(frame, classId, score, left,
+                             top, right, bottom, classMask)
 
     # For each frame, extract the bounding box and mask for each detected object
     # Draw the predicted bounding box, colorize and show the mask on the image
@@ -96,39 +135,4 @@ class Detector(object):
         # cv2.drawContours(frame[top:bottom+1, left:right+1],
         #                 contours, -1, color, 3, cv2.LINE_8, hierarchy, 100)
 
-    def postprocess(self, boxes, masks, frame):
-        # Output size of masks is NxCxHxW where
-        # N - number of detected boxes
-        # C - number of classes (excluding background)
-        # HxW - segmentation shape
-        numClasses = masks.shape[1]
-        numDetections = boxes.shape[2]
-
-        frameH = frame.shape[0]
-        frameW = frame.shape[1]
-
-        for i in range(numDetections):
-            box = boxes[0, 0, i]
-            mask = masks[i]
-            score = box[2]
-            classId = int(box[1])
-            diff = (datetime.datetime.now() - self.lastAlert).total_seconds()
-            if (score > self.confThreshold and classId == 0 and diff > 20):
-
-                # Extract the bounding box
-                left = int(frameW * box[3])
-                top = int(frameH * box[4])
-                right = int(frameW * box[5])
-                bottom = int(frameH * box[6])
-
-                left = max(0, min(left, frameW - 1))
-                top = max(0, min(top, frameH - 1))
-                right = max(0, min(right, frameW - 1))
-                bottom = max(0, min(bottom, frameH - 1))
-
-                # Extract the mask for the object
-                classMask = mask[classId]
-
-                # Draw bounding box, colorize and show the mask on the image
-                self.drawBox(frame, classId, score, left,
-                             top, right, bottom, classMask)
+    
