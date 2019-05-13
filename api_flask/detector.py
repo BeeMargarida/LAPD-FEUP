@@ -1,6 +1,8 @@
 import numpy as np
 import datetime
 import cv2
+import threading
+from buzzer import ring_buzzer
 
 
 class Detector(object):
@@ -57,6 +59,7 @@ class Detector(object):
         frameHeight = frame.shape[0]
         frameWidth = frame.shape[1]
 
+        alert = False
         classIds = []
         confidences = []
         boxes = []
@@ -71,8 +74,11 @@ class Detector(object):
                 classId = np.argmax(scores)
                 confidence = scores[classId]
                 diff = (timestamp - self.lastAlert).total_seconds()
+                
                 if confidence > self.confThreshold and classId == 0 and diff > 5:
+                    alert = True
                     self.lastAlert = datetime.datetime.now()
+                    
                     center_x = int(detection[0] * frameWidth)
                     center_y = int(detection[1] * frameHeight)
                     width = int(detection[2] * frameWidth)
@@ -83,19 +89,23 @@ class Detector(object):
                     confidences.append(float(confidence))
                     boxes.append([left, top, width, height])
 
-        # Perform non maximum suppression to eliminate redundant overlapping boxes with
-        # lower confidences.
-        indices = cv2.dnn.NMSBoxes(
-            boxes, confidences, self.confThreshold, self.nmsThreshold)
-        for i in indices:
-            i = i[0]
-            box = boxes[i]
-            left = box[0]
-            top = box[1]
-            width = box[2]
-            height = box[3]
-            self.drawPred(frame, classIds[i], confidences[i], left,
-                          top, left + width, top + height, user, db_function)
+        if alert == True:
+            # Ring buzzer
+            buzzer_thread = threading.Thread(target=ring_buzzer, args=())
+            buzzer_thread.start()
+            # Perform non maximum suppression to eliminate redundant overlapping boxes with
+            # lower confidences.
+            indices = cv2.dnn.NMSBoxes(
+                boxes, confidences, self.confThreshold, self.nmsThreshold)
+            for i in indices:
+                i = i[0]
+                box = boxes[i]
+                left = box[0]
+                top = box[1]
+                width = box[2]
+                height = box[3]
+                self.drawPred(frame, classIds[i], confidences[i], left,
+                            top, left + width, top + height, user, db_function)
 
     def drawPred(self, frame, classId, conf, left, top, right, bottom, user, db_function):
         # Draw a bounding box.
