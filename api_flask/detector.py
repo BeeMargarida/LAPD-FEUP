@@ -27,7 +27,7 @@ class Detector(object):
         self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
         self.lastAlert = datetime.datetime.now()
 
-    def detect(self, frame, timestamp):
+    def detect(self, frame, timestamp, user, db_function):
         blob = cv2.dnn.blobFromImage(
             frame, 1/255, (self.inpWidth, self.inpHeight), [0, 0, 0], 1, crop=False)
         # Set the input to the network
@@ -37,7 +37,7 @@ class Detector(object):
         outs = self.net.forward(self.getOutputsNames(self.net))
 
         # Extract the bounding box and mask for each of the detected objects
-        self.postprocess(frame, outs, timestamp)
+        self.postprocess(frame, outs, timestamp, user, db_function)
 
         return
 
@@ -53,7 +53,7 @@ class Detector(object):
         # Get the names of the output layers, i.e. the layers with unconnected outputs
         return [layersNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-    def postprocess(self, frame, outs, timestamp):
+    def postprocess(self, frame, outs, timestamp, user, db_function):
         frameHeight = frame.shape[0]
         frameWidth = frame.shape[1]
 
@@ -85,7 +85,8 @@ class Detector(object):
 
         # Perform non maximum suppression to eliminate redundant overlapping boxes with
         # lower confidences.
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, self.confThreshold, self.nmsThreshold)
+        indices = cv2.dnn.NMSBoxes(
+            boxes, confidences, self.confThreshold, self.nmsThreshold)
         for i in indices:
             i = i[0]
             box = boxes[i]
@@ -94,26 +95,29 @@ class Detector(object):
             width = box[2]
             height = box[3]
             self.drawPred(frame, classIds[i], confidences[i], left,
-                    top, left + width, top + height)
+                          top, left + width, top + height, user, db_function)
 
-
-    def drawPred(self, frame, classId, conf, left, top, right, bottom):
+    def drawPred(self, frame, classId, conf, left, top, right, bottom, user, db_function):
         # Draw a bounding box.
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255))
-        
+
         label = '%.2f' % conf
-            
+
         # Get the label for the class name and its confidence
         if self.classes:
             assert(classId < len(self.classes))
             label = '%s:%s' % (self.classes[classId], label)
-    
-        #Display the label at the top of the bounding box
-        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+
+        # Display the label at the top of the bounding box
+        labelSize, baseLine = cv2.getTextSize(
+            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         top = max(top, labelSize[1])
-        cv2.putText(frame, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255))
+        cv2.putText(frame, label, (left, top),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
 
-        cv2.imwrite(
-            "alerts/alert_{}.png".format(str(datetime.datetime.now()).replace(" ", "")), frame)
+        timestamp = datetime.datetime.now()
+        path = "alerts/alert_{}.png".format(
+            str(timestamp).replace(" ", ""))
+        cv2.imwrite(path, frame)
 
-    
+        db_function("Alert", user, timestamp, path)

@@ -4,11 +4,18 @@ import threading
 import datetime
 import cv2
 import functools
-import jwt
-from flask import Flask, render_template, Response, request, abort
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_mongoengine import MongoEngine, Document
-from werkzeug.security import generate_password_hash, check_password_hash
+import json
+import jsonschema
+from bson.objectid import ObjectId
+from flask import Flask, render_template, Response, request, abort, jsonify
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from werkzeug.security import generate_password_hash, check_password_hash
+from flask_pymongo import PyMongo, DESCENDING
+from flask_jwt_extended import (JWTManager, create_access_token,
+                                jwt_required, jwt_refresh_token_required, get_jwt_identity)
+from flask_bcrypt import Bcrypt
+
+from models.user_schema import validate_user
 from detector import Detector
 from camera import Camera
 app = Flask(__name__)
@@ -19,70 +26,86 @@ app = Flask(__name__)
 #########################################
 
 
-app.config['MONGODB_SETTINGS'] = {
-    'db': 'homesecurity',
-    'host': 'mongodb://lapd:lapd@178.166.11.252:27017/homesecurity'
-}
+# app.config['MONGODB_SETTINGS'] = {
+#     'db': 'homesecurity',
+#     'host': 'mongodb://lapd:lapd@178.166.11.252:27017/homesecurity'
+# }
+# db = MongoEngine(app)
 
-db = MongoEngine(app)
-app.config['SECRET_KEY'] = 'asdhuiaisbdpavsdpasdfasoodfbasdfgapsebfase'
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
+# login_manager = LoginManager()
+# login_manager.init_app(app)
+# login_manager.login_view = 'login'
 
+class JSONEncoder(json.JSONEncoder):
+    ''' extend json-encoder class'''
+
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        if isinstance(o, set):
+            return list(o)
+        if isinstance(o, datetime.datetime):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
+
+
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=1)
+app.config['JWT_SECRET_KEY'] = 'asdhuiaisbdpavsdpasdfasoodfbasdfgapsebfase'
+app.config["MONGO_URI"] = "mongodb://lapd:lapd@178.166.11.252:27017/homesecurity"
+mongo = PyMongo(app)
+flask_bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
+app.json_encoder = JSONEncoder
 
 #########################################
 #            AUTH FUNCTIONS           #
 #########################################
 
 
-class User(UserMixin, db.Document):
-    email = db.StringField(max_length=30, required=True)
-    name = db.StringField(max_length=30, required=True)
-    password = db.PasswordField()
-
-
-def login_required(method):
-    @functools.wraps(method)
-    def wrapper(self):
-        header = request.headers.get('Authorization')
-        _, token = header.split()
-
-        try:
-            decoded = jwt.decode(token, app.config['KEY'], algorithms='HS256')
-        except jwt.DecodeError:
-            abort(400, message='Token is not valid.')
-        except jwt.ExpiredSignatureError:
-            abort(400, message='Token is expired.')
-
-        email = decoded['email']
-
-        if db.users.find({'email': email}).count() == 0:
-            abort(400, message='User is not found.')
-
-        user = db.users.find_one({'email': email})
-        return method(self, user)
-    return wrapper
+@app.route('/register', methods=['POST'])
+def register():
+    ''' register user endpoint '''
+    data = validate_user(request.get_json())
+    if data['ok']:
+        data = data['data']
+        data['password'] = flask_bcrypt.generate_password_hash(
+            data['password'])
+        mongo.db.users.insert_one(data)
+        return jsonify({'ok': True, 'message': 'User created successfully!'}), 200
+    else:
+        return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
 
 
 @app.route('/login', methods=['POST'])
-def login():
-    email = request.json['email']
-    password = request.json['password']
+def login_user():
+    ''' auth endpoint '''
+    data = validate_user(request.get_json())
+    if data['ok']:
+        data = data['data']
+        user = mongo.db.users.find_one({'email': data['email']})
+        if user and flask_bcrypt.check_password_hash(user['password'], data['password']):
+            del user['password']
+            data_token = {
+                "email": data["email"],
+                "id": user["_id"]
+            }
+            access_token = create_access_token(identity=data_token)
+            #refresh_token = create_refresh_token(identity=data)
+            user['token'] = access_token
+            #user['refresh'] = refresh_token
+            return jsonify({'ok': True, 'data': user}), 200
+        else:
+            return jsonify({'ok': False, 'message': 'invalid username or password'}), 401
+    else:
+        return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
 
-    if db.users.find({'email': email}).count() == 0:
-        abort(400, message='User is not found.')
-    user = db.users.find_one({'email': email})
-    if not check_password_hash(user['password'], password):
-        abort(400, message='Password is incorrect.')
 
-    exp = datetime.datetime.utcnow(
-    ) + datetime.timedelta(hours=app.config['TOKEN_EXPIRE_HOURS'])
-
-    encoded = jwt.encode({'email': email, 'exp': exp},
-                         app.config['KEY'], algorithm='HS256')
-
-    return {'email': email, 'token': encoded.decode('utf-8')}
+@jwt.unauthorized_loader
+def unauthorized_response(callback):
+    return jsonify({
+        'ok': False,
+        'message': 'Missing Authorization Header'
+    }), 401
 
 
 #########################################
@@ -97,19 +120,20 @@ def hello():
     return render_template("page.html")
 
 
-@app.route("/alarm", methods=['GET'])
-@login_required
+@app.route("/alarm", methods=['POST'])
+@jwt_required
 def start_alarm():
     global alarmOn
     global alarmThread
+    user = get_jwt_identity()
     alarmOn = True
-    alarmThread = threading.Thread(target=gen_alarm, args=(Camera(),))
+    alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
     alarmThread.start()
     return Response(response="Alarm On!", status=200)
 
 
-@app.route("/alarm/stop", methods=['GET'])
-@login_required
+@app.route("/alarm/stop", methods=['POST'])
+@jwt_required
 def stop_alarm():
     global alarmOn
     alarmOn = False
@@ -117,7 +141,7 @@ def stop_alarm():
 
 
 @app.route("/alarm/status", methods=['GET'])
-@login_required
+@jwt_required
 def status_alarm():
     global alarmOn
     message = "On"
@@ -127,11 +151,37 @@ def status_alarm():
 
 
 @app.route('/livestream')
-@login_required
+@jwt_required
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/history', methods=['GET'])
+@jwt_required
+def list_histories():
+    ''' route to get all the history entriess '''
+    args = request.args
+    page = int(args["page"])
+    per_page = int(args["per_page"])
+    data = mongo.db.histories.find().skip(
+        per_page*(page-1)).limit(per_page).sort("createdAt", DESCENDING)
+    return jsonify({'ok': True, 'data': list(data)})
+
+
+def create_history(type, user, timestamp, imagePath):
+
+    history = {
+        "type": type,
+        "user_id": user["id"],
+        "imagePath": imagePath,
+        "createdAt": timestamp,
+        "updatedAt": timestamp
+    }
+    mongo.db.histories.insert_one(history)
+
+    return Response(response=history, status=200)
 
 
 #########################################
@@ -142,18 +192,16 @@ def gen(camera):
     """Video streaming generator function."""
     while True:
         frame = camera.get_frame()
-        #t = threading.Thread(target=detector.detect, args=(frame,))
+        # t = threading.Thread(target=detector.detect, args=(frame,))
         # t.start()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + cv2.imencode('.jpg', frame)[1].tobytes() + b'\r\n')
 
 
-def gen_alarm(camera):
+def gen_alarm(camera, user):
     while alarmOn:
         frame = camera.get_frame()
-        t = threading.Thread(target=detector.detect, args=(
-            frame, datetime.datetime.now(),))
-        t.start()
+        detector.detect(frame, datetime.datetime.now(), user, create_history)
     return
 
 
