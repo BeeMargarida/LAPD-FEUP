@@ -31,7 +31,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
 class LogInView extends StatefulWidget {
   @override
   _LogInViewState createState() => new _LogInViewState();
@@ -41,14 +40,16 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
   Future<bool> login() async {
-    var res = await http.post(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + 'auth/signin'),
-        body: {
-          "email": _userLoginData.email,
-          "password": _userLoginData.password
-        });
+    var res = await http.post(Uri.http(Configs.API_HOST, '/login'), headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded"
+    }, body: {
+      "email": _userLoginData.email,
+      "password": _userLoginData.password
+    });
 
     Map<String, dynamic> decodedBody = jsonDecode(res.body);
+
     _loggedUserData.loginData = _userLoginData;
     _loggedUserData.token = decodedBody['token'];
 
@@ -203,34 +204,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   }
 
   Future<void> _getAlarmState() async {
-    var res = await http
-        .get(Uri.http(Configs.API_HOST, Configs.API_PATH + 'alarm/'), headers: {
-      "Authorization": "Bearer " + _loggedUserData.token,
-      "Accept": "application/json"
-    });
-
-    if (res.statusCode != 200)
-      return Future<bool>.value(false);
-    else {
-      Map alarmState = jsonDecode(res.body);
-      print(alarmState.toString());
-      setState(() {
-        _alarmOn = alarmState["alarm"];
-      });
-    }
-  }
-
-  Future<void> _toggleAlarm(bool value) async {
-    var pathAlarm = 'alarm/';
-
-    if (!this._alarmOn) {
-      pathAlarm += 'start';
-    } else {
-      pathAlarm += 'stop';
-    }
-
-    var res = await http.post(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + pathAlarm),
+    var res = await http.get(Uri.http(Configs.API_HOST, '/alarm/status'),
         headers: {
           "Authorization": "Bearer " + _loggedUserData.token,
           "Accept": "application/json"
@@ -239,19 +213,42 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
+      Map alarmState = jsonDecode(res.body);
+      setState(() {
+        _alarmOn = alarmState["status"];
+      });
+    }
+  }
 
+  Future<void> _toggleAlarm(bool value) async {
+    var pathAlarm = '/alarm';
+
+    if (this._alarmOn) {
+      pathAlarm += '/stop';
+    }
+
+    var res = await http.post(Uri.http(Configs.API_HOST, pathAlarm), headers: {
+      "Authorization": "Bearer " + _loggedUserData.token,
+      "Accept": "application/json"
+    });
+
+    if (res.statusCode != 200)
+      return Future<bool>.value(false);
+    else {
+      print(res.body);
       Map historyItem = jsonDecode(res.body);
+      print(historyItem["createdAt"]["\$date"]);
       setState(() {
         _alarmOn = value;
 
-        // TODO: Not working!!
-        _historyItems.insert(0, HistoryItem(
-            event: historyItem["type"],
-            imagePath: historyItem["imagePath"],
-            date: DateTime.parse(historyItem["createdAt"]),
-            isExpanded: false));
+        _historyItems.insert(
+            0,
+            HistoryItem(
+                event: historyItem["type"],
+                imagePath: historyItem["imagePath"],
+                date: DateTime.fromMillisecondsSinceEpoch(historyItem["createdAt"]["\$date"]),
+                isExpanded: false));
       });
-
     }
   }
 
@@ -271,8 +268,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       'per_page': _itemsPerPage.toString(),
     };
 
-    var res = await http.get(
-        Uri.http(Configs.API_HOST, Configs.API_PATH + 'history', pageParams),
+    var res = await http.get(Uri.http(Configs.API_HOST, '/history', pageParams),
         headers: {
           "Authorization": "Bearer " + _loggedUserData.token,
           "Accept": "application/json"
@@ -288,7 +284,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
               _historyItems.add(HistoryItem(
                   event: item["type"],
                   imagePath: item["imagePath"],
-                  date: DateTime.parse(item["createdAt"]),
+                  date: DateTime.fromMillisecondsSinceEpoch(item["createdAt"]["\$date"]),
                   isExpanded: false))
             });
         _loadingMore = false;
@@ -330,8 +326,8 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
             shrinkWrap: true,
             itemCount: _historyItems.length,
             itemBuilder: (context, i) {
-              if (_historyItems[i].event == "Turn On Alarm" ||
-                  _historyItems[i].event == "Turn Off Alarm") {
+              if (_historyItems[i].event == "Alarm On" ||
+                  _historyItems[i].event == "Alarm Off") {
                 return Container(
                     color: Colors.white,
                     padding: EdgeInsets.all(20.0),
@@ -403,10 +399,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         ),
         body: new TabBarView(
           controller: tabController,
-          children: [
-            listItem,
-            Livestream(loggedUserData: _loggedUserData)
-          ],
+          children: [listItem, Livestream(loggedUserData: _loggedUserData)],
         ),
       ),
     );
