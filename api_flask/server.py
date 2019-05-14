@@ -8,8 +8,6 @@ import json
 import jsonschema
 from bson.objectid import ObjectId
 from flask import Flask, render_template, Response, request, abort, jsonify
-# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-# from werkzeug.security import generate_password_hash, check_password_hash
 from flask_pymongo import PyMongo, DESCENDING
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 jwt_required, jwt_refresh_token_required, get_jwt_identity)
@@ -25,20 +23,8 @@ app = Flask(__name__)
 #            DATABASE SETUP             #
 #########################################
 
-
-# app.config['MONGODB_SETTINGS'] = {
-#     'db': 'homesecurity',
-#     'host': 'mongodb://lapd:lapd@178.166.11.252:27017/homesecurity'
-# }
-# db = MongoEngine(app)
-
-# login_manager = LoginManager()
-# login_manager.init_app(app)
-# login_manager.login_view = 'login'
-
 class JSONEncoder(json.JSONEncoder):
     ''' extend json-encoder class'''
-
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
