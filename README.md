@@ -1,9 +1,6 @@
 # LAPD-FEUP
 Los Angeles Police Department Home Security System
 
-
-## API
-
 ### Setup
 
 #### Raspberry Pi
