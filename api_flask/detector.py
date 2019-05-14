@@ -93,6 +93,7 @@ class Detector(object):
             # Ring buzzer
             buzzer_thread = threading.Thread(target=ring_buzzer, args=())
             buzzer_thread.start()
+            
             # Perform non maximum suppression to eliminate redundant overlapping boxes with
             # lower confidences.
             indices = cv2.dnn.NMSBoxes(

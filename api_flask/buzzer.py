@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 
 
 def ring_buzzer():
+  GPIO.setwarnings(False)
   GPIO.setmode(GPIO.BCM)
   GPIO.setup(17,GPIO.OUT)
 
@@ -11,12 +12,13 @@ def ring_buzzer():
 
   try:
     while loop_count > 0:
+        GPIO.output(17,0)
+        time.sleep(0.1)
+        GPIO.output(17,1)
+        time.sleep(0.1)
         loop_count = loop_count - 1
-        GPIO.output(17,GPIO.HIGH)
-        time.sleep(0.5)
-        GPIO.output(17,GPIO.LOW)
-        time.sleep(0.5)
   except KeyboardInterrupt:
     GPIO.cleanup()
     exit
 
+#ring_buzzer()
