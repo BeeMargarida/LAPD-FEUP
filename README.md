@@ -1,15 +1,9 @@
 # LAPD-FEUP
 Los Angeles Police Department Home Security System
 
-
-## API
-
 ### Setup
 
-* Install mongo on the Raspberry Pi ``` sudo apt-get install mongodb ```
-* Run mongo in a terminal (if you have Linux), by running the command ``` mongodb ``` or the shell ``` mongo ```
-* In the folder *api*, run ``` npm install ```
-* In the folder *api*, run ``` pip3 install -r requirements.txt ```
+#### Raspberry Pi
 * Run: 
 ```
     sudo apt-get install libatlas-base-dev
@@ -19,24 +13,51 @@ Los Angeles Police Department Home Security System
     sudo apt-get install libqt4-test
 ```
 
+#### MongoDB
+* Inside the folder *api* run ``` docker-compose up ```
+* In another terminal run ``` docker exec -it api_mongo_1 mongo admin ```, which will open the mongo shell.
+* Create admin user: ``` db.createUser({ user: "root", pwd: "lapd", roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] }) ```
+* Change to homesecurity database: ``` use homesecurity ``` 
+* Authenticate: ``` db.auth("root", "lapd") ```
+* Create homesecurity database and user: ``` db.createUser({ user: "lapd", pwd: "lapd", roles: [{ role: "dbOwner", db: "homesecurity" }] }) ``` , ``` db.auth("lapd","lapd") ``` 
+
+#### Flask API
+* In the folder *api_flask*:
+    * Download yolo config and weight files:
+        * ``` mkdir yolo```
+        * ``` chmod +x yolo_models.sh ```
+        * ``` ./yolo_models ```
+    * Create and activate virtualenv:
+        * ``` virtualenv venv ```
+        * ``` . venv/bin/activate ```
+    * Install dependencies:
+        * ``` sudo apt-get install python3-pymongo ```
+        * ``` python -m pip install opencv-python Flask Flask-PyMongo flask-jwt-extended flask-bcrypt RPi.GPIO```
+    * Get YOLO models:
+        * ``` cd yolo  ```
+        * ``` chmod +x yolo_models.sh ```
+        * ``` ./yolo_models.sh ```
+
+
 
 ### Run
 
-* In the folder *api* do ``` npm start ```
+* In the folder *api_flask* do ``` python3 server.py ```
 
 ### Routes
 
 * Authentication: 
-    * Sign Up: **localhost:3000/api/auth/signup**
-    * Sign In: **localhost:3000/api/auth/signin**
+    * Sign In: **<IP>:3000/login**
 * History:
-    * List history: **localhost:3000/api/history**
+    * List history: **<IP>:3000/history**
 * Alarm 
-    * Start alarm: **localhost:3000/api/alarm/start**
-    * Stop alarm: **localhost:3000/api/alarm/stop**
+    * Start alarm: **<IP>:3000/alarm**
+    * Stop alarm: **<IP>:3000/alarm/stop**
+    * Alarm status: **<IP>:3000/alarm/status**
 * Livestream
-    * Start Livestream: **localhost:3000/api/alarm/livestream**
-    * Stop Livestream: **localhost:3000/api/alarm/livestream/stop**
+    * Start Livestream: **<IP>:3000/livestream/start**
+    * Stop Livestream: **<IP>:3000/livestream/stop**
+    * Access Livestream: **<IP>:3000/livestream**
 
 
 #### Accounts
@@ -44,16 +65,4 @@ Los Angeles Police Department Home Security System
     * Name: root
     * Email: root@gmail.com
     * Password: lapd
-
-
-## Database
-
-### Setup
-
-* Inside the folder *api* run ``` docker-compose up ```
-* In another terminal run ``` docker exec -it api_mongo_1 mongo admin ```, which will open the mongo shell.
-* Create admin user: ``` db.createUser({ user: "root", pwd: "lapd", roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] }) ```
-* Change to homesecurity database: ``` use homesecurity ``` 
-* Authenticate: ``` db.auth("root", "lapd") ```
-* Create homesecurity database and user: ``` db.createUser({ user: "lapd", pwd: "lapd", roles: [{ role: "dbOwner", db: "homesecurity" }] }) ``` , ``` db.auth("lapd","lapd") ``` 
 
