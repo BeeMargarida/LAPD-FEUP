@@ -1,7 +1,7 @@
 const db = require("../models");
 const ITEMS_PER_PAGE = 10;
 
-exports.createHistory = async function (data, res, next) {
+exports.createHistory = async function (data) {
     try {
 
         //body must contain: type (String), imagePath (string), user_id 
@@ -14,11 +14,10 @@ exports.createHistory = async function (data, res, next) {
         return history;
 
     } catch (err) {
-	console.log(err);
-        return next({
+        throw {
             status: 400,
             message: "An error occurred while creating an history entry."
-        });
+        };
     }
 }
 

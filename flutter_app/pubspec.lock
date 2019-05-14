@@ -29,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.14.11"
+  cryptoutils:
+    dependency: transitive
+    description:
+      name: cryptoutils
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -41,18 +48,18 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_socket_io:
-    dependency: "direct main"
-    description:
-      name: flutter_socket_io
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.4.6"
   flutter_test:
     dependency: "direct dev"
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_vlc_player:
+    dependency: "direct main"
+    description:
+      name: flutter_vlc_player
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.2"
   font_awesome_flutter:
     dependency: "direct main"
     description:

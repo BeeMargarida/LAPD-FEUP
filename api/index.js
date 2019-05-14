@@ -2,24 +2,35 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
+
+const path = require('path');
+const morgan = require('morgan');
+const http = require('http');
+
 const bodyParser = require("body-parser");
 const errorHandler = require("./controllers/error");
-//const db = require("./models");
 const authRoutes = require("./routes/auth");
 const historyRoutes = require("./routes/history");
 const alarmRoutes = require("./routes/alarm");
 const { loginRequired, ensureCorrectUser } = require("./middleware/auth");
-
 const PORT = process.env.PORT || 3000;
+
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static('./assets'));
 
-app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/controllers/index.html');
+const staticFolder = path.join(__dirname, 'public');
+app.use(morgan('dev'));
+app.use('/public', express.static(staticFolder));
+
+
+// TODO: Remove later
+app.get('/', function (req, res) {
+  res.sendFile('index.html', { root: staticFolder });
 });
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/history", loginRequired, historyRoutes);
@@ -33,6 +44,10 @@ app.use(function (req, res, next) {
 
 app.use(errorHandler);
 
-app.listen(PORT, function () {
-    console.log(`Server is starting on port ${PORT}`);
+// HTTP server
+var server = http.createServer(app);
+server.listen(3000, function () {
+  console.log('HTTP server listening on port ' + 3000);
 });
+
+module.exports.server = server;
