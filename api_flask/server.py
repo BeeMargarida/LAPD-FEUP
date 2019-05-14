@@ -6,17 +6,18 @@ import cv2
 import functools
 import json
 import jsonschema
-from bson.objectid import ObjectId
-from flask import Flask, render_template, Response, request, abort, jsonify
+from bson import ObjectId, json_util
+from flask import Flask, render_template, Response, request, abort, jsonify, send_from_directory
 from flask_pymongo import PyMongo, DESCENDING
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 jwt_required, jwt_refresh_token_required, get_jwt_identity)
+from flask_jwt_extended.exceptions import InvalidHeaderError
 from flask_bcrypt import Bcrypt
 
 from models.user_schema import validate_user
 from detector import Detector
 from camera import Camera
-app = Flask(__name__)
+app = Flask(__name__,static_url_path='')
 
 
 #########################################
@@ -64,8 +65,10 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login_user():
+    email = request.form.get("email")
+    password = request.form.get("password")
     ''' auth endpoint '''
-    data = validate_user(request.get_json())
+    data = validate_user({"email": email, "password": password})
     if data['ok']:
         data = data['data']
         user = mongo.db.users.find_one({'email': data['email']})
@@ -79,7 +82,7 @@ def login_user():
             #refresh_token = create_refresh_token(identity=data)
             user['token'] = access_token
             #user['refresh'] = refresh_token
-            return jsonify({'ok': True, 'data': user}), 200
+            return json_util.dumps(user), 200
         else:
             return jsonify({'ok': False, 'message': 'invalid username or password'}), 401
     else:
@@ -99,6 +102,8 @@ def unauthorized_response(callback):
 #########################################
 detector = None
 alarmThread = None
+alarmOn = False
+livestreamOn = False
 
 
 @app.route("/")
@@ -112,37 +117,55 @@ def start_alarm():
     global alarmOn
     global alarmThread
     user = get_jwt_identity()
-    alarmOn = True
-    alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
-    alarmThread.start()
-    return Response(response="Alarm On!", status=200)
+    if alarmOn != True:
+        alarmOn = True
+        alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
+        alarmThread.start()
+        history = create_history("Alarm On", user, datetime.datetime.now(), "")
+        return Response(response=history, status=200)
+    else:
+        return Response(status=200)
 
 
 @app.route("/alarm/stop", methods=['POST'])
 @jwt_required
 def stop_alarm():
     global alarmOn
-    alarmOn = False
-    return Response(response="Alarm Off!", status=200)
-
+    user = get_jwt_identity()
+    if alarmOn != False:
+        alarmOn = False
+        history= create_history("Alarm Off", user, datetime.datetime.now(), "")
+        return Response(response=history, status=200)
+    else:
+        return Response(status=200)
 
 @app.route("/alarm/status", methods=['GET'])
 @jwt_required
 def status_alarm():
     global alarmOn
-    message = "On"
-    if alarmOn == False:
-        message = "Off"
-    return Response(response=message, status=200)
+    return Response(response=json.dumps({'status': alarmOn}), status=200)
 
 
 @app.route('/livestream')
-@jwt_required
+#@jwt_required
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/livestream/start', methods=['POST'])
+@jwt_required
+def video_feed_on():
+    global livestreamOn
+    livestreamOn = True
+    return Response(status=200)
+
+@app.route('/livestream/stop', methods=['POST'])
+@jwt_required
+def video_feed_off():
+    global livestreamOn
+    livestreamOn = False
+    return Response(status=200)
 
 @app.route('/history', methods=['GET'])
 @jwt_required
@@ -151,10 +174,16 @@ def list_histories():
     args = request.args
     page = int(args["page"])
     per_page = int(args["per_page"])
+    
     data = mongo.db.histories.find().skip(
         per_page*(page-1)).limit(per_page).sort("createdAt", DESCENDING)
-    return jsonify({'ok': True, 'data': list(data)})
+    
+    #print(list(data))
+    return Response(response=json_util.dumps(data), status=200)
 
+@app.route('/alerts/<path:path>')
+def send_js(path):
+    return send_from_directory('alerts', path)
 
 def create_history(type, user, timestamp, imagePath):
 
@@ -167,7 +196,7 @@ def create_history(type, user, timestamp, imagePath):
     }
     mongo.db.histories.insert_one(history)
 
-    return Response(response=history, status=200)
+    return json_util.dumps(history)
 
 
 #########################################
@@ -176,12 +205,11 @@ def create_history(type, user, timestamp, imagePath):
 
 def gen(camera):
     """Video streaming generator function."""
-    while True:
+    while livestreamOn == True:
         frame = camera.get_frame()
-        # t = threading.Thread(target=detector.detect, args=(frame,))
-        # t.start()
+        img = cv2.imencode('.jpg', frame)[1]
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + cv2.imencode('.jpg', frame)[1].tobytes() + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + img.tobytes() + b'\r\n')
 
 
 def gen_alarm(camera, user):
@@ -190,6 +218,10 @@ def gen_alarm(camera, user):
         detector.detect(frame, datetime.datetime.now(), user, create_history)
     return
 
+@app.errorhandler(InvalidHeaderError)
+def handle_validation_error(error):
+    return Response(response="Unauthorized! Please log in first.", status=401)
+    
 
 if __name__ == "__main__":
     detector = Detector()
