@@ -193,4 +193,4 @@ def gen_alarm(camera, user):
 
 if __name__ == "__main__":
     detector = Detector()
-    app.run(host="0.0.0.0", port=5555, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=3000, debug=False, threaded=True)
