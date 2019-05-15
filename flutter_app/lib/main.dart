@@ -8,6 +8,8 @@ import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
 import 'package:flutter_app/livestream.dart';
 import 'package:flutter_app/user_info.dart';
+import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() => runApp(MyApp());
 
@@ -184,10 +186,13 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   bool _loadingMore = false;
   bool _canLoadMore = true;
   ScrollController _scrollController = ScrollController();
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
 
   @override
   void initState() {
     super.initState();
+    firebaseCloudMessaging_Listeners();
 
     this._getAlarmState();
     this._getHistoryEntries();
@@ -201,6 +206,25 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         }
       }
     });
+  }
+
+  void firebaseCloudMessaging_Listeners() {
+
+    _firebaseMessaging.getToken().then((token){
+      print(token);
+    });
+
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        print('on message $message');
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print('on resume $message');
+      },
+      onLaunch: (Map<String, dynamic> message) async {
+        print('on launch $message');
+      },
+    );
   }
 
   Future<void> _getAlarmState() async {
