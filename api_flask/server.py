@@ -14,6 +14,7 @@ from flask_jwt_extended import (JWTManager, create_access_token,
 from flask_jwt_extended.exceptions import InvalidHeaderError
 from flask_bcrypt import Bcrypt
 
+
 from models.user_schema import validate_user
 from detector import Detector
 from camera import Camera
@@ -44,8 +45,10 @@ flask_bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 app.json_encoder = JSONEncoder
 
+
+
 #########################################
-#            AUTH FUNCTIONS           #
+#            AUTH FUNCTIONS             #
 #########################################
 
 

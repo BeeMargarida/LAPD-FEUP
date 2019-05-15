@@ -2,8 +2,33 @@ import numpy as np
 import datetime
 import cv2
 import threading
+from txfcm import TXFCMNotification
+from twisted.internet import reactor
 from buzzer import ring_buzzer
 
+
+#########################################
+#           NOTIFICATIONS SETUP         #
+#########################################
+
+
+push_service = TXFCMNotification(api_key="AIzaSyANfCE0uQjasakm9w88FxNo75A6WWes12M")
+ 
+# Send to multiple devices by passing a list of ids.
+registration_ids = ["fSejPujqRoo:APA91bHiphjuWaDzSFbf_07YeFmWhz6foibLW9M58HEQRyAltR36oDYNFfGIyY7AAiwS6ZuY5uJt95wLicyyI31BeqTLhS55mYfZLP3SmUUgMwtH6lR4EHR3z_Wc-YrY3KtIQm303tFe"]
+message_title = "Alert!"
+message_body = "Someone entered your home!!"
+df = push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=message_title, message_body=message_body)
+ 
+def got_result(result):
+    print(result)
+ 
+df.addBoth(got_result)
+reactor.run()
+
+#########################################
+#               DETECTOR                #
+#########################################
 
 class Detector(object):
 

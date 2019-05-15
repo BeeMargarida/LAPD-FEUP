@@ -10,7 +10,7 @@ In the root of this folder:
     * ``` . venv/bin/activate ```
 * Install dependencies:
     * ``` sudo apt-get install python3-pymongo ```
-    * ``` python -m pip install opencv-python Flask Flask-PyMongo flask-jwt-extended flask-bcrypt RPi.GPIO```
+    * ``` python3 -m pip install opencv-python Flask Flask-PyMongo flask-jwt-extended flask-bcrypt RPi.GPIO baseapi twisted[tls] git+https://github.com/linteltechnologies/txfcm.git```
 * Get YOLO models:
     * ``` cd yolo  ```
     * ``` chmod +x yolo_models.sh ```
