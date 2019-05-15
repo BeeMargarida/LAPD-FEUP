@@ -14,6 +14,9 @@ user_schema = {
         },
         "password": {
             "type": "string"
+        },
+        "firebase_token": {
+            "type": "string"
         }
     },
     "required": ["email", "password"],

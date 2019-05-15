@@ -107,6 +107,7 @@ detector = None
 alarmThread = None
 alarmOn = False
 livestreamOn = False
+firebase_tokens = []
 
 
 @app.route("/")
@@ -120,6 +121,14 @@ def start_alarm():
     global alarmOn
     global alarmThread
     user = get_jwt_identity()
+    
+    tokens = list(mongo.db.users.find({"firebase_token": { "$exists": True}},{"firebase_token":1, "_id":0}))
+    for t in tokens:
+        print(t)
+        firebase_tokens.append(t["firebase_token"])
+            
+    print(firebase_tokens)
+    
     if alarmOn != True:
         alarmOn = True
         alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
@@ -181,7 +190,6 @@ def list_histories():
     data = mongo.db.histories.find().skip(
         per_page*(page-1)).limit(per_page).sort("createdAt", DESCENDING)
     
-    #print(list(data))
     return Response(response=json_util.dumps(data), status=200)
 
 @app.route('/alerts/<path:path>')
@@ -218,7 +226,7 @@ def gen(camera):
 def gen_alarm(camera, user):
     while alarmOn:
         frame = camera.get_frame()
-        detector.detect(frame, datetime.datetime.now(), user, create_history)
+        detector.detect(frame, datetime.datetime.now(), user, firebase_tokens, create_history)
     return
 
 @app.errorhandler(InvalidHeaderError)

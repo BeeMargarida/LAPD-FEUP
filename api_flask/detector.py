@@ -2,8 +2,6 @@ import numpy as np
 import datetime
 import cv2
 import threading
-# from txfcm import TXFCMNotification
-# from twisted.internet import reactor
 
 from pyfcm import FCMNotification
 #from buzzer import ring_buzzer
@@ -13,10 +11,10 @@ from pyfcm import FCMNotification
 #           NOTIFICATIONS SETUP         #
 #########################################
 
-push_service = FCMNotification(api_key="AAAAyytV830:APA91bEVYyPIo-yM6j_waAMTJjrs-teuAaICs3QxvRev-zukxaelX9jhkpcKpFeya30wGp17NQXc4UwG3tepJwVrazzr46Fun6y8bAcR7J1AStvGR8hTApvMMMHZJ45JWOjAdzsCcdif")
+push_service = FCMNotification(api_key="AAAAyytV830:APA91bEVYyPIo-yM6j_wraAMTJjrs-teuAaICs3QxvRev-zukxaelX9jhkpcKpFeya30wGp17NQXc4UwG3tepJwVrazzr46Fun6y8bAcR7J1AStvGR8hTApvMMMHZJ45JWOjAdzsCcdif")
  
 # Send to multiple devices by passing a list of ids.
-registration_ids = ["fSejPujqRoo:APA91bHiphjuWaDzSFbf_07YeFmWhz6foibLW9M58HEQRyAltR36oDYNFfGIyY7AAiwS6ZuY5uJt95wLicyyI31BeqTLhS55mYfZLP3SmUUgMwtH6lR4EHR3z_Wc-YrY3KtIQm303tFe"]
+#registration_ids = ["fSejPujqRoo:APA91bHiphjuWaDzSFbf_07YeFmWhz6foibLW9M58HEQRyAltR36oDYNFfGIyY7AAiwS6ZuY5uJt95wLicyyI31BeqTLhS55mYfZLP3SmUUgMwtH6lR4EHR3z_Wc-YrY3KtIQm303tFe"]
 message_title = "Alert!"
 message_body = "Someone entered your home!!"
 
@@ -48,7 +46,9 @@ class Detector(object):
         self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
         self.lastAlert = datetime.datetime.now()
 
-    def detect(self, frame, timestamp, user, db_function):
+    def detect(self, frame, timestamp, user, firebase_tokens, db_function):
+        print("DETECTOR")
+        print(firebase_tokens)
         blob = cv2.dnn.blobFromImage(
             frame, 1/255, (self.inpWidth, self.inpHeight), [0, 0, 0], 1, crop=False)
         # Set the input to the network
@@ -58,7 +58,7 @@ class Detector(object):
         outs = self.net.forward(self.getOutputsNames(self.net))
 
         # Extract the bounding box and mask for each of the detected objects
-        self.postprocess(frame, outs, timestamp, user, db_function)
+        self.postprocess(frame, outs, timestamp, user, firebase_tokens, db_function)
 
         return
 
@@ -74,7 +74,7 @@ class Detector(object):
         # Get the names of the output layers, i.e. the layers with unconnected outputs
         return [layersNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-    def postprocess(self, frame, outs, timestamp, user, db_function):
+    def postprocess(self, frame, outs, timestamp, user, tokens, db_function):
         frameHeight = frame.shape[0]
         frameWidth = frame.shape[1]
 
@@ -125,9 +125,9 @@ class Detector(object):
                 width = box[2]
                 height = box[3]
                 self.drawPred(frame, classIds[i], confidences[i], left,
-                            top, left + width, top + height, user, db_function)
+                            top, left + width, top + height, user, tokens, db_function)
 
-    def drawPred(self, frame, classId, conf, left, top, right, bottom, user, db_function):
+    def drawPred(self, frame, classId, conf, left, top, right, bottom, user, tokens, db_function):
         # Draw a bounding box.
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255))
 
@@ -151,5 +151,5 @@ class Detector(object):
         cv2.imwrite(path, frame)
 
         db_function("Alert", user, timestamp, path)
-        df = push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=message_title, message_body=message_body)
+        df = push_service.notify_multiple_devices(registration_ids=tokens, message_title=message_title, message_body=message_body)
         print(df)
