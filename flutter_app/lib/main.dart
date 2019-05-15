@@ -281,16 +281,29 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       if (historyItems.length < _itemsPerPage) _canLoadMore = false;
       setState(() {
         historyItems.forEach((item) => {
-              _historyItems.add(HistoryItem(
-                  event: item["type"],
-                  imagePath: item["imagePath"],
-                  date: DateTime.fromMillisecondsSinceEpoch(item["createdAt"]["\$date"]),
-                  isExpanded: false))
-            });
+          _historyItems.add(HistoryItem(
+              event: item["type"],
+              imagePath: item["imagePath"],
+              date: DateTime.fromMillisecondsSinceEpoch(item["createdAt"]["\$date"]),
+              isExpanded: false))
+        });
         _loadingMore = false;
       });
       return Future<bool>.value(true);
     }
+  }
+
+  Future<void> _refreshHistory() async {
+    setState(() {
+      _currHistoryPage = 1;
+      _itemsPerPage = 10;
+      _historyItems.clear();
+      _loadingMore = true;
+    });
+    await _getHistoryEntries();
+    setState(() {
+      _canLoadMore = _historyItems.length < _itemsPerPage ? false : true;
+    });
   }
 
   List<Widget> getListItems(BuildContext context) {
@@ -321,37 +334,39 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         ),
       ),
       Flexible(
-        child: ListView.builder(
-            controller: _scrollController,
-            shrinkWrap: true,
-            itemCount: _historyItems.length,
-            itemBuilder: (context, i) {
-              if (_historyItems[i].event == "Alarm On" ||
-                  _historyItems[i].event == "Alarm Off") {
-                return Container(
-                    color: Colors.white,
-                    padding: EdgeInsets.all(20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(_historyItems[i].event),
-                        Text(_historyItems[i].getDateFormat())
-                      ],
-                    ));
-              } else {
-                return Container(
-                    color: Colors.white,
-                    child: new ExpansionTile(
-                      backgroundColor: Colors.white,
-                      title: _historyItems[i]
-                          .headerBuilder(context, _historyItems[i].isExpanded),
-                      children: <Widget>[
-                        _historyItems[i].build(),
-                      ],
-                    ));
-              }
-            }),
-      ),
+        child: RefreshIndicator(
+          onRefresh: _refreshHistory,
+          child: ListView.builder(
+              controller: _scrollController,
+              shrinkWrap: true,
+              itemCount: _historyItems.length,
+              itemBuilder: (context, i) {
+                if (_historyItems[i].event == "Alarm On" ||
+                    _historyItems[i].event == "Alarm Off") {
+                  return Container(
+                      color: Colors.white,
+                      padding: EdgeInsets.all(20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          Text(_historyItems[i].event),
+                          Text(_historyItems[i].getDateFormat())
+                        ],
+                      ));
+                } else {
+                  return Container(
+                      color: Colors.white,
+                      child: new ExpansionTile(
+                        backgroundColor: Colors.white,
+                        title: _historyItems[i]
+                            .headerBuilder(context, _historyItems[i].isExpanded),
+                        children: <Widget>[
+                          _historyItems[i].build(),
+                        ],
+                      ));
+                }
+              }),
+        ),)
     ];
 
     if (_loadingMore)
