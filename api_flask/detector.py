@@ -4,14 +4,14 @@ import cv2
 import threading
 
 from pyfcm import FCMNotification
-#from buzzer import ring_buzzer
+from buzzer import ring_buzzer
 
 
 #########################################
 #           NOTIFICATIONS SETUP         #
 #########################################
 
-push_service = FCMNotification(api_key="AAAAyytV830:APA91bEVYyPIo-yM6j_wraAMTJjrs-teuAaICs3QxvRev-zukxaelX9jhkpcKpFeya30wGp17NQXc4UwG3tepJwVrazzr46Fun6y8bAcR7J1AStvGR8hTApvMMMHZJ45JWOjAdzsCcdif")
+push_service = FCMNotification(api_key="AAAAyytV830:APA91bEVYyPIo-yM6j_waAMTJjrs-teuAaICs3QxvRev-zukxaelX9jhkpcKpFeya30wGp17NQXc4UwG3tepJwVrazzr46Fun6y8bAcR7J1AStvGR8hTApvMMMHZJ45JWOjAdzsCcdif")
  
 # Send to multiple devices by passing a list of ids.
 #registration_ids = ["fSejPujqRoo:APA91bHiphjuWaDzSFbf_07YeFmWhz6foibLW9M58HEQRyAltR36oDYNFfGIyY7AAiwS6ZuY5uJt95wLicyyI31BeqTLhS55mYfZLP3SmUUgMwtH6lR4EHR3z_Wc-YrY3KtIQm303tFe"]
@@ -47,8 +47,6 @@ class Detector(object):
         self.lastAlert = datetime.datetime.now()
 
     def detect(self, frame, timestamp, user, firebase_tokens, db_function):
-        print("DETECTOR")
-        print(firebase_tokens)
         blob = cv2.dnn.blobFromImage(
             frame, 1/255, (self.inpWidth, self.inpHeight), [0, 0, 0], 1, crop=False)
         # Set the input to the network
@@ -59,14 +57,7 @@ class Detector(object):
 
         # Extract the bounding box and mask for each of the detected objects
         self.postprocess(frame, outs, timestamp, user, firebase_tokens, db_function)
-
         return
-
-        # t, _ = net.getPerfProfile()
-        # label = 'Inference time: %.2f ms' % (
-        #     t * 1000.0 / cv2.getTickFrequency())
-        # cv2.putText(frame, label, (0, 15),
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
     def getOutputsNames(self, net):
         # Get the names of all the layers in the network
@@ -110,8 +101,8 @@ class Detector(object):
 
         if alert == True:
             # Ring buzzer
-            #buzzer_thread = threading.Thread(target=ring_buzzer, args=())
-            #buzzer_thread.start()
+            buzzer_thread = threading.Thread(target=ring_buzzer, args=())
+            buzzer_thread.start()
             
             # Perform non maximum suppression to eliminate redundant overlapping boxes with
             # lower confidences.
@@ -151,5 +142,8 @@ class Detector(object):
         cv2.imwrite(path, frame)
 
         db_function("Alert", user, timestamp, path)
-        df = push_service.notify_multiple_devices(registration_ids=tokens, message_title=message_title, message_body=message_body)
-        print(df)
+        try:
+            df = push_service.notify_multiple_devices(registration_ids=tokens, message_title=message_title, message_body=message_body)
+        except pyfcm.errors.AuthenticationError:
+            print("There was a problem with the push notifications")
+

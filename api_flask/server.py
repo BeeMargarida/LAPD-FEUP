@@ -124,11 +124,8 @@ def start_alarm():
     
     tokens = list(mongo.db.users.find({"firebase_token": { "$exists": True}},{"firebase_token":1, "_id":0}))
     for t in tokens:
-        print(t)
         firebase_tokens.append(t["firebase_token"])
-            
-    print(firebase_tokens)
-    
+                
     if alarmOn != True:
         alarmOn = True
         alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
