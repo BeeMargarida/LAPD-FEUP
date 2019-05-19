@@ -55,19 +55,36 @@ app.json_encoder = JSONEncoder
 @app.route('/register', methods=['POST'])
 def register():
     ''' register user endpoint '''
-    email = request.form.get("email")
-    name = request.form.get("name")
-    password = request.form.get("password")
-    data = validate_user({"email": email, "password": password, "name": name})
-    if data['ok']:
-        data = data['data']
-        data['password'] = flask_bcrypt.generate_password_hash(
-            data['password'])
-        mongo.db.users.insert_one({"email": email, "password": password, "name": name, "firebase_token": ""})
-        return jsonify({'ok': True, 'message': 'User created successfully!'}), 200
-    else:
-        return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
+    emailAdmin = request.form.get("emailAdmin")
+    passwordAdmin = request.form.get("passwordAdmin")
+    dataAdmin = validate_user({"email": emailAdmin, "password": passwordAdmin})
+    if dataAdmin['ok']:
+        data = dataAdmin['data']
+        user = mongo.db.users.find_one({'email': data['email']})
 
+        # Check if password is right
+        if user and flask_bcrypt.check_password_hash(user['password'], data['password']) and user["admin"] == True:
+            email = request.form.get("email")
+            name = request.form.get("name")
+            password = request.form.get("password")
+            
+            data = validate_user({"email": email, "password": password, "name": name})
+
+            if data['ok']:
+                data = data['data']
+                data['password'] = flask_bcrypt.generate_password_hash(
+                    data['password'])
+                    
+                try:    
+                    mongo.db.users.insert_one({"email": email, "password": password, "name": name, "firebase_token": ""})
+                except Exception as e:
+                    return Response(response="There was an error! {}".format(e), status=400)
+                
+                return Response(response='User created successfully!', status=200)
+            else:
+                return Response(response='Bad request parameters: {}'.format(data['message']), status=400)
+        else:
+            return Response(response="The account isn't an administrator or the credentials inserted are wrong.", status=201)
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -100,9 +117,9 @@ def login_user():
             #user['refresh'] = refresh_token
             return json_util.dumps(user), 200
         else:
-            return jsonify({'ok': False, 'message': 'invalid username or password'}), 401
+            return Response(response='Invalid username or password', status=401)
     else:
-        return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
+        return Response(response='Bad request parameters: {}'.format(data['message']),status=400)
 
 
 @jwt.unauthorized_loader
