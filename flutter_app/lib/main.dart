@@ -40,25 +40,56 @@ class LogInView extends StatefulWidget {
 
 class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  String firebaseToken = "";
+  String errorMessage = "";
 
   Future<bool> login() async {
+    firebaseCloudMessaging_Listeners();
+
     var res = await http.post(Uri.http(Configs.API_HOST, '/login'), headers: {
       "Accept": "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
     }, body: {
       "email": _userLoginData.email,
-      "password": _userLoginData.password
+      "password": _userLoginData.password,
+      "firebaseToken": firebaseToken
     });
 
-    Map<String, dynamic> decodedBody = jsonDecode(res.body);
-
-    _loggedUserData.loginData = _userLoginData;
-    _loggedUserData.token = decodedBody['token'];
-
-    if (res.statusCode != 200)
+    if (res.statusCode != 200){
+      errorMessage = res.body;
       return Future<bool>.value(false);
-    else
+    }
+    else {
+      Map<String, dynamic> decodedBody = jsonDecode(res.body);
+      _loggedUserData.loginData = _userLoginData;
+      _loggedUserData.token = decodedBody['token'];
+
       return Future<bool>.value(true);
+
+    }
+
+    
+  }
+
+  void firebaseCloudMessaging_Listeners() {
+
+    _firebaseMessaging.getToken().then((token){
+      firebaseToken = token;
+      print(token);
+    });
+
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        print('on message $message');
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print('on resume $message');
+      },
+      onLaunch: (Map<String, dynamic> message) async {
+        print('on launch $message');
+      },
+    );
   }
 
   bool isEmail(String em) {
@@ -157,7 +188,7 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                                         context, "/");
                                   } else {
                                     Scaffold.of(context).showSnackBar(SnackBar(
-                                        content: Text('Invalid credentials')));
+                                        content: Text(errorMessage)));
                                   }
                                 });
                               }
@@ -186,13 +217,12 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   bool _loadingMore = false;
   bool _canLoadMore = true;
   ScrollController _scrollController = ScrollController();
-  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
 
   @override
   void initState() {
     super.initState();
-    firebaseCloudMessaging_Listeners();
+    
 
     this._getAlarmState();
     this._getHistoryEntries();
@@ -208,24 +238,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     });
   }
 
-  void firebaseCloudMessaging_Listeners() {
-
-    _firebaseMessaging.getToken().then((token){
-      print(token);
-    });
-
-    _firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print('on message $message');
-      },
-      onResume: (Map<String, dynamic> message) async {
-        print('on resume $message');
-      },
-      onLaunch: (Map<String, dynamic> message) async {
-        print('on launch $message');
-      },
-    );
-  }
+  
 
   Future<void> _getAlarmState() async {
     var res = await http.get(Uri.http(Configs.API_HOST, '/alarm/status'),
