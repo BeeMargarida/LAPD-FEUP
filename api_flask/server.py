@@ -18,7 +18,7 @@ from flask_bcrypt import Bcrypt
 from models.user_schema import validate_user
 from detector import Detector
 from camera import Camera
-app = Flask(__name__,static_url_path='')
+app = Flask(__name__, static_url_path='')
 
 
 #########################################
@@ -27,6 +27,7 @@ app = Flask(__name__,static_url_path='')
 
 class JSONEncoder(json.JSONEncoder):
     ''' extend json-encoder class'''
+
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
@@ -46,7 +47,6 @@ jwt = JWTManager(app)
 app.json_encoder = JSONEncoder
 
 
-
 #########################################
 #            AUTH FUNCTIONS             #
 #########################################
@@ -55,12 +55,15 @@ app.json_encoder = JSONEncoder
 @app.route('/register', methods=['POST'])
 def register():
     ''' register user endpoint '''
-    data = validate_user(request.get_json())
+    email = request.form.get("email")
+    name = request.form.get("name")
+    password = request.form.get("password")
+    data = validate_user({"email": email, "password": password, "name": name})
     if data['ok']:
         data = data['data']
         data['password'] = flask_bcrypt.generate_password_hash(
             data['password'])
-        mongo.db.users.insert_one(data)
+        mongo.db.users.insert_one({"email": email, "password": password, "name": name, "firebase_token": ""})
         return jsonify({'ok': True, 'message': 'User created successfully!'}), 200
     else:
         return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
@@ -70,18 +73,28 @@ def register():
 def login_user():
     email = request.form.get("email")
     password = request.form.get("password")
+    firebase_token = request.form.get("firebaseToken")
+
     ''' auth endpoint '''
     data = validate_user({"email": email, "password": password})
     if data['ok']:
         data = data['data']
         user = mongo.db.users.find_one({'email': data['email']})
+
+        # Check if password is right
         if user and flask_bcrypt.check_password_hash(user['password'], data['password']):
             del user['password']
             data_token = {
                 "email": data["email"],
                 "id": user["_id"]
             }
+            # Update Firebase token if it was changed
+            if(user['firebase_token'] != firebase_token):
+                mongo.db.users.update({"_id": user['_id']}, {
+                                      "firebase_token": firebase_token})
+
             access_token = create_access_token(identity=data_token)
+
             #refresh_token = create_refresh_token(identity=data)
             user['token'] = access_token
             #user['refresh'] = refresh_token
@@ -121,14 +134,16 @@ def start_alarm():
     global alarmOn
     global alarmThread
     user = get_jwt_identity()
-    
-    tokens = list(mongo.db.users.find({"firebase_token": { "$exists": True}},{"firebase_token":1, "_id":0}))
+
+    tokens = list(mongo.db.users.find(
+        {"firebase_token": {"$exists": True}}, {"firebase_token": 1, "_id": 0}))
     for t in tokens:
         firebase_tokens.append(t["firebase_token"])
-                
+
     if alarmOn != True:
         alarmOn = True
-        alarmThread = threading.Thread(target=gen_alarm, args=(Camera(), user,))
+        alarmThread = threading.Thread(
+            target=gen_alarm, args=(Camera(), user,))
         alarmThread.start()
         history = create_history("Alarm On", user, datetime.datetime.now(), "")
         return Response(response=history, status=200)
@@ -143,10 +158,12 @@ def stop_alarm():
     user = get_jwt_identity()
     if alarmOn != False:
         alarmOn = False
-        history= create_history("Alarm Off", user, datetime.datetime.now(), "")
+        history = create_history(
+            "Alarm Off", user, datetime.datetime.now(), "")
         return Response(response=history, status=200)
     else:
         return Response(status=200)
+
 
 @app.route("/alarm/status", methods=['GET'])
 @jwt_required
@@ -156,11 +173,12 @@ def status_alarm():
 
 
 @app.route('/livestream')
-#@jwt_required
+# @jwt_required
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 @app.route('/livestream/start', methods=['POST'])
 @jwt_required
@@ -169,12 +187,14 @@ def video_feed_on():
     livestreamOn = True
     return Response(status=200)
 
+
 @app.route('/livestream/stop', methods=['POST'])
 @jwt_required
 def video_feed_off():
     global livestreamOn
     livestreamOn = False
     return Response(status=200)
+
 
 @app.route('/history', methods=['GET'])
 @jwt_required
@@ -183,15 +203,17 @@ def list_histories():
     args = request.args
     page = int(args["page"])
     per_page = int(args["per_page"])
-    
+
     data = mongo.db.histories.find().skip(
         per_page*(page-1)).limit(per_page).sort("createdAt", DESCENDING)
-    
+
     return Response(response=json_util.dumps(data), status=200)
+
 
 @app.route('/alerts/<path:path>')
 def send_js(path):
     return send_from_directory('alerts', path)
+
 
 def create_history(type, user, timestamp, imagePath):
 
@@ -223,13 +245,15 @@ def gen(camera):
 def gen_alarm(camera, user):
     while alarmOn:
         frame = camera.get_frame()
-        detector.detect(frame, datetime.datetime.now(), user, firebase_tokens, create_history)
+        detector.detect(frame, datetime.datetime.now(), user,
+                        firebase_tokens, create_history)
     return
+
 
 @app.errorhandler(InvalidHeaderError)
 def handle_validation_error(error):
     return Response(response="Unauthorized! Please log in first.", status=401)
-    
+
 
 if __name__ == "__main__":
     detector = Detector()

@@ -1,9 +1,24 @@
 <html>
   <head>
     <title>Video Streaming Demonstration</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   </head>
   <body>
-    <h1>Video Streaming Demonstration</h1>
-    <img src="http://178.166.11.252:3000/livestream">
+    <h1>Home Security</h1>
+    <form method="POST" action="178.166.11.252:3000/register">
+      <div class="form-group">
+        <label for="nameInput">Name</label>
+        <input type="text" class="form-control" id="nameInput" aria-describedby="nameHelp" placeholder="Enter name">
+      </div>
+      <div class="form-group">
+        <label for="emailInput">Email address</label>
+        <input type="email" class="form-control" id="emailInput" aria-describedby="emailHelp" placeholder="Enter email">
+      </div>
+      <div class="form-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" class="form-control" id="passwordInput" placeholder="Password">
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
   </body>
 </html>
