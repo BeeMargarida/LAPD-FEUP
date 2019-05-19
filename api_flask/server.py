@@ -117,9 +117,9 @@ def login_user():
             #user['refresh'] = refresh_token
             return json_util.dumps(user), 200
         else:
-            return jsonify({'ok': False, 'message': 'invalid username or password'}), 401
+            return Response(response='Invalid username or password', status=401)
     else:
-        return jsonify({'ok': False, 'message': 'Bad request parameters: {}'.format(data['message'])}), 400
+        return Response(response='Bad request parameters: {}'.format(data['message']),status=400)
 
 
 @jwt.unauthorized_loader
