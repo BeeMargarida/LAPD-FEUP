@@ -18,12 +18,12 @@ class HistoryItem {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text(this.event,
-                  style: this.event == "Alert!"
+                  style: this.event == "Alert"
                       ? TextStyle(
                           color: Colors.red, fontWeight: FontWeight.bold, fontSize: 15.0)
                       : TextStyle(color: Colors.black, fontSize: 15.0)),
               Text(this.getDateFormat(),
-                  style: this.event == "Alert!"
+                  style: this.event == "Alert"
                       ? TextStyle(
                           color: Colors.red, fontWeight: FontWeight.bold, fontSize: 15.0)
                       : TextStyle(color: Colors.black, fontSize: 15.0))
