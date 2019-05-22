@@ -9,7 +9,6 @@ import 'package:flutter_app/history_item.dart';
 import 'package:flutter_app/livestream.dart';
 import 'package:flutter_app/news.dart';
 import 'package:flutter_app/user_info.dart';
-import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() => runApp(MyApp());
@@ -69,6 +68,8 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
       return Future<bool>.value(true);
 
     }
+
+    
   }
 
   void firebaseCloudMessaging_Listeners() {
@@ -188,7 +189,6 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                                   } else {
                                     Scaffold.of(context).showSnackBar(SnackBar(
                                         content: Text(errorMessage)));
-                                    print(errorMessage);
                                   }
                                 });/*.catchError((err) {
                                   Scaffold.of(context).showSnackBar(SnackBar(

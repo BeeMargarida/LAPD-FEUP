@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
+import 'dart:convert' show utf8;
 import 'package:http/http.dart' as http;
 import 'package:html/dom.dart' as dom;
 import 'package:xml/xml.dart' as xml;
@@ -26,6 +27,7 @@ class _NewsState  extends State<News> {
     super.initState();
     print('init news');
     this._getNews().catchError((err) {
+      print(err.toString());
       showInSnackBar(err.toString());
     });
 
@@ -51,23 +53,25 @@ class _NewsState  extends State<News> {
 
   Future<void> _getNews() async {
     var res = await http.get(Configs.PSP_RSS);
-    if(res.statusCode != 200)
+    if (res.statusCode != 200)
       throw 'Unsuccessful fetch';
 
     var split = res.body.split('\n');
-    var spitClean = split.sublist(1,split.length);
+    var spitClean = split.sublist(1, split.length);
     var rss = spitClean.join('\n');
+    var decodedRss = utf8.decode(rss.codeUnits);
+    print(decodedRss);
 
-    var feed = xml.parse(rss);
+    var feed = xml.parse(decodedRss);
 
     List<NewsItem> items = [];
     var news = feed.findAllElements("item");
-    for(var article in news){
+    for (var article in news) {
       items.add(NewsItem(article));
     }
 
     print('Items length: ${items.length}');
-    if(mounted) {
+    if (mounted) {
       setState(() {
         _newsItems = items;
         _newsReady = true;
@@ -81,33 +85,41 @@ class _NewsState  extends State<News> {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      runAlignment: WrapAlignment.center,
-      children: <Widget>[
-        this._newsReady
-            ? RefreshIndicator(
-            onRefresh: _refreshFeed,
-            child: ListView.builder(
-                controller: _scrollController,
-                shrinkWrap: true,
-                itemCount: _newsItems.length,
-                itemBuilder: (context, i) {
+    return Column (
+        children: [
+          this._newsReady ?
+            Flexible(
+              child:
+                RefreshIndicator(
+                onRefresh: _refreshFeed,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  shrinkWrap: true,
+                  itemCount: _newsItems.length,
+                  itemBuilder: (context, i) {
                     return Container(
-                        color: Colors.white,
-                        padding: EdgeInsets.all(20.0),
-                        child: Column(
-                          children: <Widget>[
-                            _newsItems[i].build(),
-                          ],
-                        ));
-                }),
+                      color: Colors.white,
+                      padding: EdgeInsets.all(20.0),
+                      child: Column(
+                        children: <Widget>[
+                          GestureDetector(
+                              onTap: (){
+                            Navigator.pushNamed(context,'/');
+                          },
+                          child: _newsItems[i].buildPreview(),
+                          )
+                        ],
+                      ));
+                  }),
+              )
           )
-            : CircularProgressIndicator(
-          value: null,
-        )
-      ],
+          : Center(
+              child:
+                CircularProgressIndicator(
+                  value: null,
+              ),
+          ),
+        ]
     );
   }
 }

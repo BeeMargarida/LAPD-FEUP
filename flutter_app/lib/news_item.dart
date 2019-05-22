@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_app/configs.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart' as xml;
@@ -86,9 +85,19 @@ class NewsItem {
     }
   }
 
+  Widget _getImage(){
+    if(image != null)
+      return Image.network(image);
+    else
+      return Image(
+        image: AssetImage('assets/psp_logo.jpg'),
+      );
+  }
+
   List<Widget> getItems(){
     var items = [
       Text(title),
+      _getImage(),
       Text(date),
       Text(body),
     ];
@@ -104,8 +113,35 @@ class NewsItem {
   }
 
   Widget build() {
-    return Wrap(
+    return Column(
         children: getItems(),
+    );
+  }
+
+  Widget buildPreview() {
+    return Container(
+        color: Colors.white,
+        child: Row(
+          children: <Widget>[
+            Container(
+              child: _getImage(),
+              height: 100,
+              width: 200,
+            ),
+            Column(
+              children: <Widget>[
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  )
+                ),
+                Text(date),
+              ],
+            )
+          ]
+        )
     );
   }
 }

@@ -71,9 +71,7 @@ def register():
             data = validate_user({"email": email, "password": password, "name": name})
 
             if data['ok']:
-                data = data['data']
-                data['password'] = flask_bcrypt.generate_password_hash(
-                    data['password'])
+                password = flask_bcrypt.generate_password_hash(password)
                     
                 try:    
                     mongo.db.users.insert_one({"email": email, "password": password, "name": name, "firebase_token": ""})
