@@ -105,8 +105,8 @@ def login_user():
             }
             # Update Firebase token if it was changed
             if(user['firebase_token'] != firebase_token):
-                mongo.db.users.update({"_id": user['_id']}, {
-                                      "firebase_token": firebase_token})
+                mongo.db.users.update_one({"_id": user['_id']}, { "$set": {
+                                      "firebase_token": firebase_token}})
 
             access_token = create_access_token(identity=data_token)
 
