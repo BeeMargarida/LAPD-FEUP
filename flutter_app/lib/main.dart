@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
 import 'package:flutter_app/livestream.dart';
+import 'package:flutter_app/news.dart';
 import 'package:flutter_app/user_info.dart';
-import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() => runApp(MyApp());
@@ -44,7 +44,7 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
   String firebaseToken = "";
   String errorMessage = "";
 
-  Future<bool> login() async {
+  Future<bool> _login() async {
     firebaseCloudMessaging_Listeners();
 
     var res = await http.post(Uri.http(Configs.API_HOST, '/login'), headers: {
@@ -177,7 +177,7 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                                     .requestFocus(new FocusNode());
                                 _formKey.currentState.save();
 
-                                login().then((bool res) {
+                                _login().then((bool res) {
                                   if (res) {
                                     /*Navigator.push(
                                       context,
@@ -190,7 +190,11 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
                                     Scaffold.of(context).showSnackBar(SnackBar(
                                         content: Text(errorMessage)));
                                   }
+                                });/*.catchError((err) {
+                                  Scaffold.of(context).showSnackBar(SnackBar(
+                                      content: Text(err.toString())));
                                 });
+                                */
                               }
                             },
                             child: Text('Submit'),
@@ -251,9 +255,11 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       return Future<bool>.value(false);
     else {
       Map alarmState = jsonDecode(res.body);
-      setState(() {
-        _alarmOn = alarmState["status"];
-      });
+      if(mounted) {
+        setState(() {
+          _alarmOn = alarmState["status"];
+        });
+      }
     }
   }
 
@@ -275,17 +281,20 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
       print(res.body);
       Map historyItem = jsonDecode(res.body);
       print(historyItem["createdAt"]["\$date"]);
-      setState(() {
-        _alarmOn = value;
+      if(mounted){
+        setState(() {
+          _alarmOn = value;
 
-        _historyItems.insert(
-            0,
-            HistoryItem(
-                event: historyItem["type"],
-                imagePath: historyItem["imagePath"],
-                date: DateTime.fromMillisecondsSinceEpoch(historyItem["createdAt"]["\$date"]),
-                isExpanded: false));
-      });
+          _historyItems.insert(
+              0,
+              HistoryItem(
+                  event: historyItem["type"],
+                  imagePath: historyItem["imagePath"],
+                  date: DateTime.fromMillisecondsSinceEpoch(
+                      historyItem["createdAt"]["\$date"]),
+                  isExpanded: false));
+        });
+      }
     }
   }
 
@@ -296,9 +305,11 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   }
 
   Future<void> _getHistoryEntries() async {
-    setState(() {
-      _loadingMore = true;
-    });
+    if(mounted) {
+      setState(() {
+        _loadingMore = true;
+      });
+    }
 
     var pageParams = {
       'page': _currHistoryPage.toString(),
@@ -316,31 +327,39 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     else {
       List historyItems = jsonDecode(res.body);
       if (historyItems.length < _itemsPerPage) _canLoadMore = false;
-      setState(() {
-        historyItems.forEach((item) => {
-          _historyItems.add(HistoryItem(
-              event: item["type"],
-              imagePath: item["imagePath"],
-              date: DateTime.fromMillisecondsSinceEpoch(item["createdAt"]["\$date"]),
-              isExpanded: false))
+      if(mounted) {
+        setState(() {
+          historyItems.forEach((item) =>
+          {
+            _historyItems.add(HistoryItem(
+                event: item["type"],
+                imagePath: item["imagePath"],
+                date: DateTime.fromMillisecondsSinceEpoch(
+                    item["createdAt"]["\$date"]),
+                isExpanded: false))
+          });
+          _loadingMore = false;
         });
-        _loadingMore = false;
-      });
+      }
       return Future<bool>.value(true);
     }
   }
 
   Future<void> _refreshHistory() async {
-    setState(() {
-      _currHistoryPage = 1;
-      _itemsPerPage = 10;
-      _historyItems.clear();
-      _loadingMore = true;
-    });
+    if(mounted) {
+      setState(() {
+        _currHistoryPage = 1;
+        _itemsPerPage = 10;
+        _historyItems.clear();
+        _loadingMore = true;
+      });
+    }
     await _getHistoryEntries();
-    setState(() {
-      _canLoadMore = _historyItems.length < _itemsPerPage ? false : true;
-    });
+    if(mounted) {
+      setState(() {
+        _canLoadMore = _historyItems.length < _itemsPerPage ? false : true;
+      });
+    }
   }
 
   List<Widget> getListItems(BuildContext context) {
@@ -416,12 +435,13 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    tabController = new TabController(length: 2, vsync: this);
+    tabController = new TabController(length: 3, vsync: this);
 
     var tabBarItem = new TabBar(
       tabs: [
         Tab(text: "Main"),
         Tab(text: "Live Feed"),
+        Tab(text: "News"),
       ],
       labelColor: Colors.white,
       unselectedLabelColor: Colors.black,
@@ -434,7 +454,7 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
     );
 
     return new DefaultTabController(
-      length: 2,
+      length: 3,
       child: new Scaffold(
         appBar: new AppBar(
           title: new Text("Home Security"),
@@ -451,7 +471,10 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
         ),
         body: new TabBarView(
           controller: tabController,
-          children: [listItem, Livestream(loggedUserData: _loggedUserData)],
+          children: [
+            listItem,
+            Livestream(loggedUserData: _loggedUserData),
+            News(loggedUserData: _loggedUserData)],
         ),
       ),
     );

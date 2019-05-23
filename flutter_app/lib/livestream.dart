@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
-import 'dart:typed_data';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_vlc_player/vlc_player.dart';
 import 'package:flutter_vlc_player/vlc_player_controller.dart';
@@ -40,11 +38,13 @@ class _LivestreamState extends State<Livestream> {
     if (res.statusCode != 200)
       return Future<bool>.value(false);
     else {
-      await setState(() {
-        this.video = true;
-        this.urlToStreamVideo = 'http://178.166.11.252:3000/livestream';
-        this.controller = VlcPlayerController();
-      });
+      if (mounted) {
+        setState(() {
+          this.video = true;
+          this.urlToStreamVideo = 'http://178.166.11.252:3000/livestream';
+          this.controller = VlcPlayerController();
+        });
+      }
     }
   }
 
