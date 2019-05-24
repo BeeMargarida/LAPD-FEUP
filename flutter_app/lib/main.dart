@@ -8,6 +8,7 @@ import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/history_item.dart';
 import 'package:flutter_app/livestream.dart';
 import 'package:flutter_app/news.dart';
+import 'package:flutter_app/news_page.dart';
 import 'package:flutter_app/user_info.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -28,7 +29,8 @@ class MyApp extends StatelessWidget {
         initialRoute: '/login',
         routes: {
           '/': (context) => MainView(),
-          '/login': (context) => LogInView()
+          '/login': (context) => LogInView(),
+          '/news': (context) => NewsView(),
         });
   }
 }
