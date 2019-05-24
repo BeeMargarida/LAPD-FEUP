@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
-import 'dart:convert' show utf8;
-import 'package:http/http.dart' as http;
-import 'package:html/dom.dart' as dom;
 import 'package:xml/xml.dart' as xml;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_app/configs.dart';
@@ -46,15 +43,13 @@ class _NewsState  extends State<News> {
     /*var res = await http.get(Configs.PSP_RSS);
     if (res.statusCode != 200)
       throw 'Unsuccessful fetch';
+    var decodedRss = utf8.decode(res.body.codeUnits);
+    print(decodedRss);
     */
 
-    var res = await _getFileData('assets/psp.xml');
-    print(res);
+    var decodedRss = await _getFileData('assets/psp.xml');
 
-    //var decodedRss = utf8.decode(res.body.codeUnits);
-    //print(decodedRss);
-
-    var split = res.split('\n');
+    var split = decodedRss.split('\n');
     var spitClean = split.sublist(1, split.length);
     var rss = spitClean.join('\n');
 
@@ -94,20 +89,17 @@ class _NewsState  extends State<News> {
                   itemBuilder: (context, i) {
                     return Card(
                       color: Colors.white,
-                      child: Column(
-                        children: [
-                          GestureDetector(
-                              onTap: (){
-                            Navigator.pushNamed(
-                              context,
-                              '/news',
-                              arguments: _newsItems[i]
-                            );
-                          },
-                          child: _newsItems[i].buildPreview(),
-                          )
-                        ],
-                      ));
+                      child: GestureDetector(
+                        onTap: (){
+                          Navigator.pushNamed(
+                            context,
+                            '/news',
+                            arguments: _newsItems[i]
+                          );
+                        },
+                        child: _newsItems[i].buildPreview(context),
+                      )
+                    );
                   }),
               )
           )
