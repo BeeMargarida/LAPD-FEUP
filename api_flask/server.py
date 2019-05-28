@@ -152,6 +152,7 @@ def start_alarm():
 
     tokens = list(mongo.db.users.find(
         {"firebase_token": {"$exists": True}}, {"firebase_token": 1, "_id": 0}))
+    firebase_tokens = []
     for t in tokens:
         firebase_tokens.append(t["firebase_token"])
 
