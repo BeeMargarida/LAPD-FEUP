@@ -47,8 +47,9 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
   String errorMessage = "";
 
   Future<bool> _login() async {
-    firebaseCloudMessaging_Listeners();
-
+    await firebaseCloudMessaging_Listeners();
+    print("HERE");
+    print(firebaseToken);
     var res = await http.post(Uri.http(Configs.API_HOST, '/login'), headers: {
       "Accept": "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
@@ -74,9 +75,9 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
     
   }
 
-  void firebaseCloudMessaging_Listeners() {
+  Future<void> firebaseCloudMessaging_Listeners() async {
 
-    _firebaseMessaging.getToken().then((token){
+    await _firebaseMessaging.getToken().then((token){
       firebaseToken = token;
       print(token);
     });
