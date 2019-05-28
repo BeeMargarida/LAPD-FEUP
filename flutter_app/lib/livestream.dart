@@ -25,6 +25,7 @@ class _LivestreamState extends State<Livestream> {
 
   @override
   void initState() {
+    print("LIVESTREAM");
     super.initState();
     this._getStream();
   }
