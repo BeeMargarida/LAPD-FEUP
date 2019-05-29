@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
+import 'dart:convert' show utf8;
+import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_app/configs.dart';
 import 'package:flutter_app/user_info.dart';
 import 'package:flutter_app/news_item.dart';
@@ -35,19 +36,12 @@ class _NewsState  extends State<News> {
     ));
   }
 
-  Future<String> _getFileData(String path) async {
-    return await rootBundle.loadString(path);
-  }
-
   Future<void> _getNews() async {
-    /*var res = await http.get(Configs.PSP_RSS);
+    var res = await http.get(Configs.PSP_RSS);
     if (res.statusCode != 200)
       throw 'Unsuccessful fetch';
-    var decodedRss = utf8.decode(res.body.codeUnits);
-    print(decodedRss);
-    */
 
-    var decodedRss = await _getFileData('assets/psp.xml');
+    var decodedRss = utf8.decode(res.body.codeUnits);
 
     var split = decodedRss.split('\n');
     var spitClean = split.sublist(1, split.length);
@@ -87,26 +81,26 @@ class _NewsState  extends State<News> {
                   shrinkWrap: true,
                   itemCount: _newsItems.length,
                   itemBuilder: (context, i) {
-                    return Card(
-                      color: Colors.white,
-                      child: GestureDetector(
-                        onTap: (){
-                          Navigator.pushNamed(
-                            context,
-                            '/news',
-                            arguments: _newsItems[i]
-                          );
-                        },
+                    return GestureDetector(
+                      onTap: (){
+                        Navigator.pushNamed(
+                        context,
+                        '/news',
+                        arguments: _newsItems[i]
+                        );
+                      },
+                      child: Card(
+                        color: Colors.white,
                         child: _newsItems[i].buildPreview(context),
                       )
                     );
                   }),
               )
           )
-          : Center(
-              child:
-                CircularProgressIndicator(
-                  value: null,
+          : Padding(
+              padding: EdgeInsets.all(10.0),
+              child: CircularProgressIndicator(
+                value: null,
               ),
           ),
         ]

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:html/parser.dart' as parser;
-import 'dart:convert' show utf8, base64;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart' as xml;
 
 class NewsItem {
   String title;
+  String author;
   String date;
   List<String> links;
   String body;
@@ -15,7 +15,12 @@ class NewsItem {
   NewsItem(xml.XmlElement article){
     links = [];
 
+    //Title
     title = article.findElements('title').first.text;
+
+    //Author
+    author = article.findElements('author').first.text;
+
     var description = article.findElements('description').first.text;
     var doc = parser.parse(description);
     var docBody = doc.querySelector('body');
@@ -45,16 +50,6 @@ class NewsItem {
       this.image = imgElem.querySelector('a').attributes['href'];
     }
 
-    /*
-    print('Title: ');
-    print(title);
-    print('News Date: ');
-    print(date);
-    print('News Body: ');
-    print(body);
-    print('Img: ');
-    print(image);
-    */
   }
 
   _launchUrl(String url) async{
@@ -86,6 +81,13 @@ class NewsItem {
               fontSize: 22,
             )
           ),
+      ),
+      Text(
+          'Por ${author}',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15
+          )
       ),
       Text(
         date,
