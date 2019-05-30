@@ -1,6 +1,26 @@
 # LAPD-FEUP
 Los Angeles Police Department Home Security System (ah ah)
 
+## Main Functionalities
+
+* Intruder Detection with Object Detection system
+* Livestream of camera feed
+* History of actions and events - alerts have images of captured intruder
+* News feed from PSP website
+* When an intruder is detected, a buzzer rings and a push notification is sent to all users in the household
+
+## User Requirements
+
+* As a Visitor, I want to log in through the app so that I can control the system
+* As an User, I want to turn the system off through  the  app  so  that  I  can  control  its activity 
+* As an User, I want to turn the system on through the app so that I can start monitoring the area
+* As an User,  I  want  to  access  the  camera feed in the app so that I can visualize the secured area anywhere and anytime
+* As an User, I want to be informed with a push notification when the system senses someone so that I know that my house is insecure
+* As an User, I want to view the history of past  activities  including  previous  alarms and actions so that I can keep track of past events
+* As an User, I want to log out through the app  so  that  no  else  has  access  to  my  account
+* As an User, I want to see the news from the Polícia de Segurança Pública website,so that I can be informed of recent crimes and dangerous situations
+* As an User,  I  want  to  see  each  of  the pieces of news from the Polícia de Segurança Pública website in more detail, so that I can know what happened.
+
 ### Setup
 
 #### Raspberry Pi
