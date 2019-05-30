@@ -64,15 +64,14 @@ class _LogInViewState extends State<LogInView> with TickerProviderStateMixin {
       return Future<bool>.value(false);
     }
     else {
+      print(res.body);
       Map<String, dynamic> decodedBody = jsonDecode(res.body);
       _loggedUserData.loginData = _userLoginData;
       _loggedUserData.token = decodedBody['token'];
 
       return Future<bool>.value(true);
 
-    }
-
-    
+    }    
   }
 
   Future<void> firebaseCloudMessaging_Listeners() async {
@@ -222,8 +221,9 @@ class _MainViewState extends State<MainView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-  }@override
+  }
   
+  @override
   void dispose() {
     super.dispose();
   }

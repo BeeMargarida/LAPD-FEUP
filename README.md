@@ -59,10 +59,15 @@ Los Angeles Police Department Home Security System
     * Stop Livestream: **<IP>:3000/livestream/stop**
     * Access Livestream: **<IP>:3000/livestream**
 
+* Sign in Webpage: **<IP>:3000/**
 
 #### Accounts
 
     * Name: root
     * Email: root@gmail.com
+    * Password: lapd
+
+    * Name: user
+    * Email: user@gmail.com
     * Password: lapd
 
