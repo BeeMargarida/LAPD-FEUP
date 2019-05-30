@@ -40,7 +40,7 @@ class JSONEncoder(json.JSONEncoder):
 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=1)
 app.config['JWT_SECRET_KEY'] = 'asdhuiaisbdpavsdpasdfasoodfbasdfgapsebfase'
-app.config["MONGO_URI"] = "mongodb://lapd:lapd@178.166.11.252:27017/homesecurity"
+app.config["MONGO_URI"] = "mongodb://lapd:lapd@localhost:27017/homesecurity"
 mongo = PyMongo(app)
 flask_bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
