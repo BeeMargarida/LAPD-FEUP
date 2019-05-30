@@ -42,7 +42,7 @@ class _LivestreamState extends State<Livestream> {
       if (mounted) {
         setState(() {
           this.video = true;
-          this.urlToStreamVideo = 'http://178.166.11.252:3000/livestream';
+          this.urlToStreamVideo = Configs.LIVESTREAM_HOST;
           this.controller = VlcPlayerController();
         });
       }
